@@ -1,0 +1,254 @@
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { format, parseISO } from 'date-fns';
+import { Printer, AlertTriangle, ArrowLeft, Shield } from 'lucide-react';
+import { useAppContext } from '../context/AppContext';
+
+const safeFormatDate = (dateStr: string | null | undefined, formatStr: string = 'MMMM dd, yyyy') => {
+    if (!dateStr) return 'N/A';
+    try {
+        return format(parseISO(dateStr), formatStr);
+    } catch (e) {
+        return 'Invalid Date';
+    }
+};
+
+export const PhysicianView = () => {
+    const { id } = useParams();
+    const { clinicName, doctorName, token, user, logout } = useAppContext();
+    const isDoctor = user?.role === 'doctor';
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [meds, setMeds] = useState('');
+    const [tests, setTests] = useState('');
+
+    useEffect(() => {
+        if (!token) return;
+
+        fetch(`/api/sessions/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    logout();
+                    return;
+                }
+                return res.json();
+            })
+            .then(resData => {
+                if (resData) {
+                    setData(resData);
+                    setMeds(resData.summary?.suggested_medications || '');
+                    setTests(resData.summary?.suggested_tests || '');
+                }
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+    }, [id, token]);
+
+    const handleSaveRecommendations = async () => {
+        setSaving(true);
+        try {
+            const res = await fetch(`/api/sessions/${id}/summary`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    ...data.summary,
+                    suggested_medications: meds,
+                    suggested_tests: tests
+                })
+            });
+            if (res.status === 401 || res.status === 403) return logout();
+            alert('Recommendations saved successfully.');
+        } catch (err) {
+            alert('Failed to save recommendations.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="text-center animate-pulse">
+                <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <div className="w-6 h-6 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <p className="text-slate-500 font-medium tracking-wide font-serif">Retrieving Medical Record...</p>
+            </div>
+        </div>
+    );
+    
+    if (!data || !data.session || !data.summary) return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="text-center bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+                <h1 className="text-xl font-bold text-slate-800 mb-2">Session Not Found</h1>
+                <p className="text-slate-500 mb-6">The requested medical session could not be found or you do not have permission to view it.</p>
+                <Link to="/sessions" className="text-teal-600 font-medium hover:underline">Back to History</Link>
+            </div>
+        </div>
+    );
+
+    const { session, summary } = data;
+    
+    let flags = [];
+    try { 
+        if (summary?.clinical_flags) {
+            flags = JSON.parse(summary.clinical_flags); 
+        }
+    } catch (e) {}
+    if (!Array.isArray(flags)) flags = [];
+
+    let keyFindings = [];
+    try { 
+        if (summary?.key_findings) {
+            keyFindings = JSON.parse(summary.key_findings); 
+        }
+    } catch (e) {}
+    if (!Array.isArray(keyFindings)) keyFindings = [];
+
+    return (
+        <div className="min-h-screen bg-white">
+            <div className="max-w-4xl mx-auto p-10 font-sans print:p-0 print:max-w-none">
+                
+                {/* Header elements usually hidden in print, we provide a print button */}
+                <div className="flex justify-between items-center mb-10 print:hidden">
+                    <Link to="/sessions" className="flex items-center text-slate-400 hover:text-slate-700 transition-colors font-medium">
+                        <ArrowLeft className="w-4 h-4 mr-2" /> Back to History
+                    </Link>
+                    <button onClick={() => window.print()} className="flex items-center text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg px-4 py-2 hover:bg-slate-50 transition-colors font-medium shadow-sm">
+                        <Printer className="w-5 h-5 mr-1.5" /> Print Summary
+                    </button>
+                </div>
+
+                {/* Document Header */}
+                <div className="border-b-4 border-slate-800 pb-6 mb-8 flex justify-between items-end">
+                    <div>
+                        <h1 className="text-4xl font-bold text-slate-900 tracking-tight">{clinicName}</h1>
+                        <p className="text-lg text-slate-600 mt-1">Physician: Dr. {doctorName}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest border border-slate-200 px-3 py-1 rounded inline-block">CONSULTATION SUMMARY</p>
+                        <p className="text-slate-500 font-medium">Session ID: #{id} • {safeFormatDate(session.created_at, 'MMMM dd, yyyy h:mm a')}</p>
+                    </div>
+                </div>
+
+                {/* Patient Block */}
+                <div className="bg-slate-50 border border-slate-200 p-6 rounded-lg mb-8 flex justify-between items-center print:border-2 print:border-slate-800 print:bg-white">
+                    <div>
+                        <p className="text-sm text-slate-500 uppercase tracking-widest font-bold mb-1">PATIENT NAME</p>
+                        <p className="text-2xl font-bold text-slate-900">{session.name}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm text-slate-500 uppercase tracking-widest font-bold mb-1">DETAILS</p>
+                        <p className="text-xl text-slate-800">{session.age} yrs • {session.gender || 'Unknown'}</p>
+                    </div>
+                </div>
+
+                {/* Critical Flags */}
+                {flags && flags.length > 0 && flags.some((f:string) => f.trim()) && (
+                    <div className="bg-white border-2 border-red-600 p-6 rounded-lg mb-8 shadow-sm">
+                        <h2 className="text-red-700 font-bold text-lg flex items-center mb-3 uppercase tracking-wider">
+                            <AlertTriangle className="w-6 h-6 mr-2 stroke-2" /> CRITICAL FLAGS
+                        </h2>
+                        <ul className="list-disc pl-6 text-red-900 text-lg space-y-2 font-medium">
+                            {flags.map((f: string, i: number) => f.trim() && <li key={i}>{f}</li>)}
+                        </ul>
+                    </div>
+                )}
+
+                {/* Formatted Content */}
+                <div className="space-y-10 text-slate-800">
+                    
+                    <div>
+                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">Chief Complaint</h2>
+                        <p className="text-2xl font-semibold leading-snug">{summary.chief_complaint || 'N/A'}</p>
+                    </div>
+
+                    <div>
+                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">History of Presenting Illness</h2>
+                        <div className="text-lg leading-relaxed space-y-4">
+                            {(summary.history_of_presenting_illness?.split('\n') || []).map((p: string, i: number) => (
+                                p.trim() && <p key={i}>{p}</p>
+                            ))}
+                            {(!summary.history_of_presenting_illness || summary.history_of_presenting_illness.trim() === '') && <p>No history recorded.</p>}
+                        </div>
+                    </div>
+
+                    {keyFindings.length > 0 && keyFindings.some((k:string) => k.trim()) && (
+                        <div>
+                            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">Key Findings from Records</h2>
+                            <ul className="list-disc pl-6 text-lg space-y-2 leading-relaxed">
+                                {keyFindings.map((f: string, i: number) => f.trim() && <li key={i}>{f}</li>)}
+                            </ul>
+                        </div>
+                    )}
+
+                    <div>
+                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">Clinical Assessment & Notes</h2>
+                        <p className="text-lg leading-relaxed whitespace-pre-wrap">{summary.assessment_notes || 'No objective notes recorded.'}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-2 border-slate-100">
+                        <div className="bg-teal-50/50 p-6 rounded-xl border border-teal-100">
+                            <h2 className="text-sm font-bold text-teal-700 uppercase tracking-widest mb-4 flex items-center">
+                                Suggested Medications
+                            </h2>
+                            <textarea
+                                value={meds}
+                                onChange={(e) => setMeds(e.target.value)}
+                                readOnly={!isDoctor}
+                                className={`w-full min-h-[150px] p-4 bg-white border border-teal-200 rounded-lg text-slate-800 text-lg leading-relaxed focus:ring-2 focus:ring-teal-500 transition-all placeholder:text-slate-300 ${!isDoctor ? 'cursor-not-allowed opacity-80' : ''}`}
+                                placeholder={isDoctor ? "Enter medications here..." : "No medications prescribed yet."}
+                            />
+                        </div>
+                        <div className="bg-indigo-50/50 p-6 rounded-xl border border-indigo-100">
+                            <h2 className="text-sm font-bold text-indigo-700 uppercase tracking-widest mb-4 flex items-center">
+                                Recommended Tests
+                            </h2>
+                            <textarea
+                                value={tests}
+                                onChange={(e) => setTests(e.target.value)}
+                                readOnly={!isDoctor}
+                                className={`w-full min-h-[150px] p-4 bg-white border border-indigo-200 rounded-lg text-slate-800 text-lg leading-relaxed focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-300 ${!isDoctor ? 'cursor-not-allowed opacity-80' : ''}`}
+                                placeholder={isDoctor ? "Enter recommended tests here..." : "No tests recommended yet."}
+                            />
+                        </div>
+                    </div>
+
+                    {!isDoctor && (
+                        <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-600 text-sm flex items-center print:hidden">
+                            <Shield className="w-5 h-5 mr-3 text-slate-400" />
+                            Note: As a staff member, you can view this clinical summary, but only a Doctor can finalize recommendations and prescriptions.
+                        </div>
+                    )}
+
+                    {isDoctor && (
+                        <div className="flex justify-end pt-4 print:hidden">
+                            <button
+                                onClick={handleSaveRecommendations}
+                                disabled={saving}
+                                className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md disabled:opacity-50 flex items-center"
+                            >
+                                {saving ? 'Saving...' : 'Finalize Recommendations'}
+                            </button>
+                        </div>
+                    )}
+
+                </div>
+                
+                {/* Print Footer */}
+                <div className="mt-16 pt-8 border-t-2 border-slate-200 text-center text-slate-500 text-sm hidden print:block">
+                    <p>This summary was electronically generated by AI4CARE Medical Assistant.</p>
+                    <p>Generated on: {format(new Date(), 'MMMM dd, yyyy')}</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default PhysicianView;

@@ -1,0 +1,13 @@
+{
+  "name": "ai4care",
+  "version": "1.0.0",
+  "description": "AI-powered Medical History Assistant",
+  "scripts": {
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "node server/server.js",
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

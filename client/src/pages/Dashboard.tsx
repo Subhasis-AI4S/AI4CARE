@@ -1,0 +1,223 @@
+import { useState, useEffect, useMemo } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { format, subDays, isSameDay, parseISO, isValid } from 'date-fns';
+import { Activity, CheckCircle, Clock, AlertTriangle, User, Copy, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+
+const safeFormatDate = (dateStr: string | null | undefined, formatStr: string = 'MMM dd, yyyy') => {
+    if (!dateStr) return 'N/A';
+    try {
+        const d = parseISO(dateStr);
+        if (!isValid(d)) return 'Invalid Date';
+        return format(d, formatStr);
+    } catch (e) {
+        return 'Invalid Date';
+    }
+};
+
+const safeIsSameDay = (dateStr: string | null | undefined, compareDate: Date) => {
+    if (!dateStr) return false;
+    try {
+        const d = parseISO(dateStr);
+        if (!isValid(d)) return false;
+        return isSameDay(d, compareDate);
+    } catch (e) {
+        return false;
+    }
+};
+
+import { useAppContext } from '../context/AppContext';
+
+export const Dashboard = () => {
+    const { t } = useTranslation();
+    const { token, logout, doctorName, clinicName, user } = useAppContext();
+    const [sessions, setSessions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!token) return;
+
+        fetch('/api/sessions', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    logout();
+                    return;
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data) setSessions(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error(err);
+                setLoading(false);
+            });
+    }, [token]);
+
+    const stats = useMemo(() => {
+        const today = new Date();
+        const todaySessions = (sessions || []).filter(s => safeIsSameDay(s.created_at, today));
+        return {
+            totalToday: todaySessions.length,
+            completed: sessions.filter(s => s.status === 'completed').length,
+            pending: sessions.filter(s => s.status === 'in_progress').length,
+            flagged: sessions.filter(s => s.status === 'flagged').length,
+        };
+    }, [sessions]);
+
+    const chartData = useMemo(() => {
+        const data = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = subDays(new Date(), i);
+            const count = (sessions || []).filter(s => safeIsSameDay(s.created_at, date)).length;
+            data.push({
+                name: format(date, 'MMM dd'),
+                sessions: count
+            });
+        }
+        return data;
+    }, [sessions]);
+
+    const recentSessions = sessions.slice(0, 5); // top 5
+
+    if (loading) return <div className="p-8 flex items-center justify-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div></div>;
+
+    return (
+        <div className="p-8 max-w-7xl mx-auto space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-gradient-header p-8 rounded-2xl text-white shadow-md gap-6">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold mb-2">{t('dashboard_flow.welcome')}, {doctorName}</h1>
+                    <p className="text-teal-100 text-base md:text-lg opacity-90 mb-3">{clinicName} • {t('dashboard_flow.subtitle')}</p>
+                    <div className="flex flex-col gap-2 min-w-0">
+                        <div className="inline-flex items-center bg-white/10 hover:bg-white/20 transition-colors px-4 py-1.5 rounded-xl border border-white/20 cursor-default group max-w-fit" title={t('common.clinic_id')}>
+                            <Activity className="w-4 h-4 mr-2 text-teal-200 group-hover:text-white transition-colors" />
+                            <span className="text-xs font-medium opacity-80 mr-2 uppercase tracking-wide">{t('common.clinic_id')}:</span>
+                            <code className="text-sm font-bold font-mono tracking-wider">{user?.tenantId}</code>
+                        </div>
+                        <button 
+                            onClick={() => {
+                                const url = `${window.location.origin}/login/staff`;
+                                navigator.clipboard.writeText(url);
+                                alert('Staff Login URL copied to clipboard!');
+                            }}
+                            className="flex items-center gap-2 text-[11px] font-bold text-teal-200 hover:text-white transition-all bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg w-fit border border-white/5 hover:border-white/10 group"
+                        >
+                            <Copy className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                            Copy Staff Login Link
+                            <ExternalLink className="w-3 h-3 opacity-50" />
+                        </button>
+                    </div>
+                </div>
+                <Link to="/session/new" className="bg-white text-primary px-6 py-3 rounded-xl font-bold shadow-sm hover:bg-slate-50 transition-all flex items-center group w-full md:w-auto justify-center">
+                    <Activity className="w-5 h-5 mr-2 text-teal-600 group-hover:scale-110 transition-transform" />
+                    {t('new_session')}
+                </Link>
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <Link to="/sessions" className="block transform transition-all hover:scale-[1.02] active:scale-[0.98]">
+                    <MetricCard title={t('dashboard_flow.today_sessions')} value={stats.totalToday} icon={<Activity className="text-indigo-500 w-6 h-6" />} bg="bg-indigo-50" />
+                </Link>
+                <Link to="/sessions?status=completed" className="block transform transition-all hover:scale-[1.02] active:scale-[0.98]">
+                    <MetricCard title={t('completed_sessions')} value={stats.completed} icon={<CheckCircle className="text-emerald-500 w-6 h-6" />} bg="bg-emerald-50" />
+                </Link>
+                <Link to="/sessions?status=in_progress" className="block transform transition-all hover:scale-[1.02] active:scale-[0.98]">
+                    <MetricCard title={t('dashboard_flow.in_progress')} value={stats.pending} icon={<Clock className="text-amber-500 w-6 h-6" />} bg="bg-amber-50" />
+                </Link>
+                <Link to="/sessions?status=flagged" className="block transform transition-all hover:scale-[1.02] active:scale-[0.98]">
+                    <MetricCard title={t('dashboard_flow.flagged_cases')} value={stats.flagged} icon={<AlertTriangle className="text-rose-500 w-6 h-6" />} bg="bg-rose-50" />
+                </Link>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Chart */}
+                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 className="text-xl font-semibold text-slate-800 mb-6">{t('dashboard_flow.activity_chart')}</h2>
+                    <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b'}} />
+                                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b'}} allowDecimals={false} />
+                                <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                                <Bar dataKey="sessions" fill="#0D9488" radius={[4, 4, 0, 0]} barSize={40} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Recent Sessions */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <h2 className="text-xl font-semibold text-slate-800">{t('dashboard_flow.recent_sessions')}</h2>
+                        <Link to="/sessions" className="text-sm text-teal-600 font-medium hover:text-teal-700">{t('dashboard_flow.view_all')}</Link>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                        {recentSessions.length === 0 ? (
+                            <div className="p-6 text-center text-slate-500">{t('common.no_data')}</div>
+                        ) : (
+                            <ul className="divide-y divide-slate-100">
+                                {recentSessions.map(session => (
+                                    <li key={session.id}>
+                                        <Link to={session.status === 'in_progress' ? `/session/resume/${session.id}` : `/session/${session.id}`} className="block p-4 hover:bg-slate-50 transition-colors">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <div className="flex items-center">
+                                                    <div className="bg-slate-100 p-2 rounded-full mr-3 text-slate-600">
+                                                        <User className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-slate-800">{session.patient_name || 'Anonymous'} <span className="text-slate-400 font-normal text-sm">({session.patient_age || '?'})</span></p>
+                                                        <p className="text-xs text-slate-500">{safeFormatDate(session.created_at, 'MMM dd, yyyy h:mm a')}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="mt-2 text-sm text-slate-600 line-clamp-1 ml-11">
+                                                {session.summary_complaint || session.complaint}
+                                            </div>
+                                            <div className="mt-2 ml-11">
+                                                <StatusBadge status={session.status} />
+                                            </div>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export const StatusBadge = ({ status }: { status: string }) => {
+    const { t } = useTranslation();
+    switch (status) {
+        case 'completed':
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"><CheckCircle className="w-3 h-3 mr-1" /> {t('dashboard_flow.status_completed')}</span>;
+        case 'flagged':
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800"><AlertTriangle className="w-3 h-3 mr-1" /> {t('dashboard_flow.status_flagged')}</span>;
+        default:
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><Clock className="w-3 h-3 mr-1" /> {t('dashboard_flow.status_in_progress')}</span>;
+    }
+};
+
+const MetricCard = ({ title, value, icon, bg }: any) => (
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center h-full hover:shadow-md transition-all hover:-translate-y-1">
+        <div className={`p-4 rounded-2xl mr-5 flex flex-shrink-0 ${bg}`}>
+            {icon}
+        </div>
+        <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{title}</p>
+            <p className="text-3xl font-bold text-slate-800">{value}</p>
+        </div>
+    </div>
+);
+
+export default Dashboard;

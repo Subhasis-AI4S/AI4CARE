@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+dist/
+build/
+.env
+
+# Database
+server/db/*.db
+server/db/*.db-journal
+server/db/*.db-shm
+server/db/*.db-wal
+
+# Uploads
+server/uploads/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Browser Tests & Recordings
+.gemini/
+.agent/
+.agents/
+.system_generated/
+recording_*.webp
+screenshot_*.png
+*.webp
+*.png
