@@ -4,8 +4,7 @@ import type { ReactNode } from 'react';
 // Define the shape of our context
 interface AppContextType {
   user: any | null;
-  token: string | null;
-  login: (token: string, user: any) => void;
+  login: (user: any) => void;
   logout: () => void;
   clinicName: string;
   doctorName: string;
@@ -27,66 +26,144 @@ interface AppContextType {
     clinic_email?: string;
     clinic_phone?: string;
   }) => Promise<void>;
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+  fetchCsrfToken: () => Promise<string | null>;
+  fetchWithCsrf: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<any | null>(() => {
-    const savedUser = localStorage.getItem('ai4care_user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem('ai4care_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      console.error('Failed to parse user from localStorage', e);
+      return null;
+    }
   });
-  const [token, setToken] = useState<string | null>(localStorage.getItem('ai4care_token'));
-  const [clinicName, setClinicName] = useState<string>(() => {
-    const savedUser = localStorage.getItem('ai4care_user');
-    return savedUser ? JSON.parse(savedUser).clinicName || 'AI4CARE Clinic' : 'AI4CARE Clinic';
-  });
-  const [doctorName, setDoctorName] = useState<string>(() => {
-    const savedUser = localStorage.getItem('ai4care_user');
-    return savedUser ? JSON.parse(savedUser).fullName || 'Doctor' : 'Doctor';
-  });
+  const [clinicName, setClinicName] = useState<string>('AI4CARE Clinic');
+  const [doctorName, setDoctorName] = useState<string>('Doctor');
   const [specialization, setSpecialization] = useState<string>('');
   const [clinicAddress, setClinicAddress] = useState<string>('');
-  const [clinicEmail, setClinicEmail] = useState<string>(() => {
-    const savedUser = localStorage.getItem('ai4care_user');
-    return savedUser ? JSON.parse(savedUser).email || '' : '';
-  });
+  const [clinicEmail, setClinicEmail] = useState<string>('');
   const [clinicPhone, setClinicPhone] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const login = (newToken: string, newUser: any) => {
-    setToken(newToken);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const savedTheme = localStorage.getItem('ai4care_theme');
+    if (savedTheme) return savedTheme as 'light' | 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
+
+  const fetchCsrfToken = async () => {
+    try {
+      const res = await fetch('/api/csrf-token', { credentials: 'include' });
+      const data = await res.json();
+      setCsrfToken(data.csrfToken);
+      return data.csrfToken;
+    } catch (err) {
+      console.error('Failed to fetch CSRF token:', err);
+      return null;
+    }
+  };
+
+  const fetchWithCsrf = async (url: string, options: RequestInit = {}) => {
+    let currentToken = csrfToken;
+    if (!currentToken && url !== '/api/csrf-token') {
+      currentToken = await fetchCsrfToken();
+    }
+
+    const headers = {
+      ...options.headers,
+      'X-CSRF-Token': currentToken || '',
+    };
+
+    const res = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include'
+    });
+
+    if (res.status === 403 && url !== '/api/csrf-token') {
+      // Token might be expired, try one refresh
+      const newToken = await fetchCsrfToken();
+      if (newToken) {
+        return fetch(url, {
+          ...options,
+          headers: { ...options.headers, 'X-CSRF-Token': newToken },
+          credentials: 'include'
+        });
+      }
+    }
+
+    return res;
+  };
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('ai4care_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const checkAuth = async () => {
+    try {
+      // First ensure we have a CSRF token
+      await fetchCsrfToken();
+      
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+        localStorage.setItem('ai4care_user', JSON.stringify(data.user));
+      } else {
+        setUser(null);
+        localStorage.removeItem('ai4care_user');
+      }
+    } catch (err) {
+      console.error('Auth check failed:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = (newUser: any) => {
     setUser(newUser);
-    localStorage.setItem('ai4care_token', newToken);
     localStorage.setItem('ai4care_user', JSON.stringify(newUser));
   };
 
-  const logout = () => {
-    setToken(null);
+  const logout = async () => {
+    try {
+      await fetchWithCsrf('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
     setUser(null);
-    localStorage.removeItem('ai4care_token');
     localStorage.removeItem('ai4care_user');
+    setCsrfToken(null);
   };
 
   const fetchSettings = async () => {
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-    
     try {
-      setIsLoading(true);
-      const res = await fetch('/api/settings', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const res = await fetchWithCsrf('/api/settings');
       if (res.status === 401 || res.status === 403) {
-        logout();
+        // Silently fail settings fetch if not authenticated yet
         return;
       }
-      if (!res.ok) throw new Error('Failed to fetch settings');
+      if (!res.ok) return;
+      
       const data = await res.json();
       if (data.clinic_name) setClinicName(data.clinic_name);
       if (data.doctor_name) setDoctorName(data.doctor_name);
@@ -97,29 +174,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (err: any) {
       setError(err.message);
       console.error(err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const updateSettings = async (settings: { 
-    clinic_name?: string; 
-    doctor_name?: string; 
-    gemini_api_key?: string; 
-    auto_save?: string; 
-    export_format?: string;
-    specialization?: string;
-    clinic_address?: string;
-    clinic_email?: string;
-    clinic_phone?: string;
-  }) => {
+  const updateSettings = async (settings: any) => {
     try {
-      const res = await fetch('/api/settings', {
+      const res = await fetchWithCsrf('/api/settings', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       });
       if (res.status === 401 || res.status === 403) {
@@ -127,6 +189,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         throw new Error('Session expired. Please login again.');
       }
       if (!res.ok) throw new Error('Failed to update settings');
+      // ... same updates ...
       if (settings.clinic_name) setClinicName(settings.clinic_name);
       if (settings.doctor_name) setDoctorName(settings.doctor_name);
       if (settings.specialization) setSpecialization(settings.specialization);
@@ -134,7 +197,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (settings.clinic_email) setClinicEmail(settings.clinic_email);
       if (settings.clinic_phone) setClinicPhone(settings.clinic_phone);
       
-      // Update persistent user object
       if (user) {
         const updatedUser = { 
           ...user, 
@@ -151,27 +213,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   useEffect(() => {
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
     if (user) {
       if (user.clinicName) setClinicName(user.clinicName);
       if (user.fullName) setDoctorName(user.fullName);
       if (user.email) setClinicEmail(user.email);
+      fetchSettings();
     }
   }, [user]);
 
-  useEffect(() => {
-    if (token) {
-      fetchSettings();
-    } else {
-      setIsLoading(false);
-    }
-  }, [token]);
-
   return (
     <AppContext.Provider value={{ 
-      user, token, login, logout,
+      user, login, logout,
       clinicName, doctorName,
       specialization, clinicAddress, clinicEmail, clinicPhone,
-      isLoading, error, fetchSettings, updateSettings 
+      isLoading, error, fetchSettings, updateSettings,
+      theme, toggleTheme,
+      fetchCsrfToken, fetchWithCsrf
     }}>
       {children}
     </AppContext.Provider>

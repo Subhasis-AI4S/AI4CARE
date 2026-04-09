@@ -4,6 +4,8 @@ import { Search, Eye, Trash2, SlidersHorizontal, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { StatusBadge } from './Dashboard';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 const safeFormatDate = (dateStr: string | null | undefined, formatStr: string = 'MMM dd, yyyy') => {
     if (!dateStr) return 'N/A';
@@ -18,7 +20,7 @@ import { useAppContext } from '../context/AppContext';
 
 export const SessionHistory = () => {
     const { t } = useTranslation();
-    const { token, logout } = useAppContext();
+    const { logout, user, fetchWithCsrf } = useAppContext();
     const [sessions, setSessions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -29,28 +31,27 @@ export const SessionHistory = () => {
     const initialStatus = queryParams.get('status') || 'all';
     const [statusFilter, setStatusFilter] = useState(initialStatus);
 
-    const fetchSessions = () => {
-        if (!token) return;
+    const fetchSessions = async () => {
+        if (!user || !fetchWithCsrf) return;
         setLoading(true);
-        fetch('/api/sessions', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
-            .then(res => {
-                if (res.status === 401 || res.status === 403) {
-                    logout();
-                    return;
-                }
-                return res.json();
-            })
-            .then(data => {
-                if (data) setSessions(data);
-                setLoading(false);
-            });
+        try {
+            const res = await fetchWithCsrf('/api/sessions');
+            if (res.status === 401 || res.status === 403) {
+                logout();
+                return;
+            }
+            const data = await res.json();
+            if (data) setSessions(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
-        if (token) fetchSessions();
-    }, [token]);
+        if (user) fetchSessions();
+    }, [user]);
 
     // Also update filter if URL changes
     useEffect(() => {
@@ -62,20 +63,21 @@ export const SessionHistory = () => {
         if (!confirm(t('sessions_flow.delete_confirm'))) return;
         
         try {
-            const res = await fetch(`/api/sessions/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+            if (!fetchWithCsrf) return;
+            const res = await fetchWithCsrf(`/api/sessions/${id}`, {
+                method: 'DELETE'
             });
             if (res.status === 401 || res.status === 403) return logout();
             
             if (res.ok) {
                 setSessions(sessions.filter(s => s.id !== id));
+                toast.success(t('sessions_flow.delete_success') || 'Session deleted');
             } else {
-                alert(t('sessions_flow.delete_error'));
+                toast.error(t('sessions_flow.delete_error'));
             }
         } catch (err) {
             console.error(err);
-            alert(t('common.error'));
+            toast.error(t('common.error'));
         }
     };
 
@@ -89,12 +91,12 @@ export const SessionHistory = () => {
     return (
         <div className="p-8 max-w-7xl mx-auto h-full flex flex-col">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800">{t('sessions')}</h1>
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200">{t('sessions')}</h1>
                 <p className="text-slate-500 mt-1">{t('sessions_flow.subtitle')}</p>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-4 items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/50 flex-1 flex flex-col overflow-hidden">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/50 flex flex-wrap gap-4 items-center justify-between">
                     <div className="relative flex-1 min-w-[300px] max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                         <input 
@@ -102,11 +104,11 @@ export const SessionHistory = () => {
                             placeholder={t('sessions_flow.search_placeholder')} 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+                            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-slate-900"
                         />
                     </div>
                     <div className="flex items-center space-x-3">
-                        <div className="flex items-center text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg px-3 py-2">
+                        <div className="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg px-3 py-2">
                             <SlidersHorizontal className="w-4 h-4 mr-2 text-slate-400" />
                             <select 
                                 value={statusFilter} 
@@ -133,7 +135,7 @@ export const SessionHistory = () => {
                         </div>
                     ) : (
                         <table className="min-w-full divide-y divide-slate-200">
-                            <thead className="bg-slate-50 sticky top-0 z-10">
+                            <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10">
                                 <tr>
                                     <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('sessions_flow.th_patient')}</th>
                                     <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider pl-16">{t('sessions_flow.th_complaint')}</th>
@@ -142,22 +144,28 @@ export const SessionHistory = () => {
                                     <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('sessions_flow.th_actions')}</th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-slate-200">
-                                {filteredSessions.map((s) => (
-                                    <tr key={s.id} className="hover:bg-slate-50 transition-colors group">
+                            <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200">
+                                {filteredSessions.map((s, idx) => (
+                                    <motion.tr 
+                                        key={s.id} 
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: idx * 0.05 }}
+                                        className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors group"
+                                    >
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className="flex-shrink-0 h-10 w-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600">
                                                     <User className="h-5 w-5" />
                                                 </div>
                                                 <div className="ml-4">
-                                                    <div className="text-sm font-bold text-slate-900">{s.patient_name}</div>
+                                                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{s.patient_name}</div>
                                                     <div className="text-sm text-slate-500">{s.patient_age} yrs • {s.gender || 'U'}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-sm text-slate-900 max-w-md truncate" title={s.summary_complaint || s.complaint}>{s.summary_complaint || s.complaint}</div>
+                                            <div className="text-sm text-slate-900 dark:text-slate-100 max-w-md truncate" title={s.summary_complaint || s.complaint}>{s.summary_complaint || s.complaint}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                                             {safeFormatDate(s.created_at)}<br/>
@@ -176,7 +184,7 @@ export const SessionHistory = () => {
                                                 </button>
                                             </div>
                                         </td>
-                                    </tr>
+                                    </motion.tr>
                                 ))}
                             </tbody>
                         </table>

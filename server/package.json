@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "setup:pg": "node db/setup.js && node db/setup_saas.js && node db/add_detailed_respiratory_templates.js",
+    "migrate:data": "node db/migrate_sqlite_to_pg.js"
   },
   "keywords": [],
   "author": "",
@@ -13,11 +17,16 @@
   "dependencies": {
     "@google/genai": "^1.44.0",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.71.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "csurf": "^1.11.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
+    "pg": "^8.20.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
   }

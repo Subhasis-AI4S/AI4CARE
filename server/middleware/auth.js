@@ -2,10 +2,14 @@ const { verifyToken } = require('../utils/auth');
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    let token = authHeader && authHeader.split(' ')[1];
+
+    if (!token && req.cookies) {
+        token = req.cookies.token;
+    }
 
     if (!token) {
-        return res.status(401).json({ error: 'Access denied. No token provided.' });
+        return res.status(401).json({ error: 'Access denied. Please login.' });
     }
 
     const decoded = verifyToken(token);

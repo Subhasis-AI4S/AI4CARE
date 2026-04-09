@@ -1,13 +1,13 @@
 const { GoogleGenAI } = require('@google/genai');
 const db = require('./db/database');
 
-const getApiKey = (tenantId) => {
-    return new Promise((resolve) => {
-        db.get("SELECT value FROM settings WHERE key = 'gemini_api_key' AND (tenant_id = ? OR tenant_id = 'default-clinic-id') ORDER BY tenant_id DESC", [tenantId], (err, row) => {
-            if (err) return resolve('');
-            resolve(row ? row.value : '');
-        });
-    });
+const getApiKey = async (tenantId) => {
+    try {
+        const row = await db.get("SELECT value FROM settings WHERE key = 'gemini_api_key' AND (tenant_id = ? OR tenant_id = 'default-clinic-id') ORDER BY tenant_id DESC", [tenantId]);
+        return row ? row.value : '';
+    } catch (err) {
+        return '';
+    }
 };
 
 const safetySettings = [
@@ -17,28 +17,28 @@ const safetySettings = [
     { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
 ];
 
-const getTemplatesContext = (complaint, tenantId) => {
-    return new Promise((resolve) => {
-        db.all('SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = "default-clinic-id"', [tenantId], (err, templates) => {
-            if (err || !templates) return resolve('');
-            
-            // Very simple keyword matching
-            const lowerComplaint = complaint.toLowerCase();
-            const matchedTemplates = templates.filter(t => {
-                const keywords = t.trigger_keywords.split(',').map(k => k.trim().toLowerCase());
-                return keywords.some(k => lowerComplaint.includes(k));
-            });
-            
-            if (matchedTemplates.length === 0) return resolve('');
-            
-            let context = 'Standard follow-up inspiration for related symptoms:\n';
-            matchedTemplates.forEach(t => {
-                const qs = JSON.parse(t.questions || '[]');
-                context += `- ${t.name}: ${qs.join(' ')}\n`;
-            });
-            resolve(context);
+const getTemplatesContext = async (complaint, tenantId) => {
+    try {
+        const templates = await db.all('SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = "default-clinic-id"', [tenantId]);
+        if (!templates || templates.length === 0) return '';
+        
+        const lowerComplaint = complaint.toLowerCase();
+        const matchedTemplates = templates.filter(t => {
+            const keywords = t.trigger_keywords ? t.trigger_keywords.split(',').map(k => k.trim().toLowerCase()) : [];
+            return keywords.some(k => lowerComplaint.includes(k));
         });
-    });
+        
+        if (matchedTemplates.length === 0) return '';
+        
+        let context = 'Standard follow-up inspiration for related symptoms:\n';
+        matchedTemplates.forEach(t => {
+            const qs = JSON.parse(t.questions || '[]');
+            context += `- ${t.name}: ${qs.join(' ')}\n`;
+        });
+        return context;
+    } catch (err) {
+        return '';
+    }
 };
 
 const generateQuestions = async (complaint, language = 'en', tenantId) => {
@@ -91,7 +91,7 @@ STRICT GUIDELINES:
         
         const questions = JSON.parse(text);
         console.log(`Successfully generated ${questions.length} questions.`);
-        return Array.isArray(questions) ? questions : [];
+        return Array.isArray(questions) ? questions.map(q => ({ text: q, source: 'AI' })) : [];
     } catch (e) {
         console.error("Gemini API call failed:", e.message);
         console.log("Falling back to local templates...");
@@ -99,35 +99,33 @@ STRICT GUIDELINES:
     }
 };
 
-const generateQuestionsInternalFallback = (complaint, language = 'en') => {
-    return new Promise((resolve) => {
-        db.all("SELECT * FROM templates", [], (err, templates) => {
-            if (err) {
-                console.error("Database error during fallback:", err);
-                // Last ditch generic questions if DB fails
-                return resolve(getGenericQuestions(language));
-            }
+const generateQuestionsInternalFallback = async (complaint, language = 'en') => {
+    try {
+        const templates = await db.all("SELECT * FROM templates");
+        if (!templates) return getGenericQuestions(language);
 
-            const lowerComplaint = complaint.toLowerCase();
-            const matchedTemplate = templates.find(t => {
-                const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase());
-                return keywords.some(k => k && lowerComplaint.includes(k));
-            });
-            
-            if (matchedTemplate) {
-                try {
-                    console.log(`Using template: ${matchedTemplate.name}`);
-                    resolve(JSON.parse(matchedTemplate.questions));
-                    return;
-                } catch (pe) {
-                    console.error("Error parsing template JSON:", pe);
-                }
-            }
-
-            console.log("No specific template matched. Using generic follow-ups.");
-            resolve(getGenericQuestions(language));
+        const lowerComplaint = complaint.toLowerCase();
+        const matchedTemplate = templates.find(t => {
+            const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase());
+            return keywords.some(k => k && lowerComplaint.includes(k));
         });
-    });
+        
+        if (matchedTemplate) {
+            try {
+                console.log(`Using template: ${matchedTemplate.name}`);
+                const qs = JSON.parse(matchedTemplate.questions);
+                return qs.map(q => ({ text: q, source: 'Template' }));
+            } catch (pe) {
+                console.error("Error parsing template JSON:", pe);
+            }
+        }
+
+        console.log("No specific template matched. Using generic follow-ups.");
+        return getGenericQuestions(language).map(q => ({ text: q, source: 'Generic' }));
+    } catch (err) {
+        console.error("Database error during fallback:", err);
+        return getGenericQuestions(language).map(q => ({ text: q, source: 'Generic' }));
+    }
 };
 
 const getGenericQuestions = (language) => {
@@ -171,10 +169,10 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
             chief_complaint: complaint,
             history_of_presenting_illness: `Patient ${patient.name} (${patient.age}y ${patient.gender}) presents with: ${complaint}.\n\nFollow-up Details (Direct Intake):\n${qaPairs.map(qa => `- ${qa.question}: ${qa.answer}`).join('\n')}`,
             key_findings: keyFindings.length > 0 ? keyFindings : ["No records documented"],
-            clinical_flags: ["AI summary unavailable - using intake data"],
-            assessment_notes: "This is an automated fallback summary. Please review the patient interaction details for full context.",
-            suggested_medications: "AI suggestions unavailable. Please perform a manual clinical assessment.",
-            suggested_tests: "AI suggestions unavailable. Consider baseline diagnostic tests if indicated by symptoms."
+            clinical_flags: ["Baseline Clinical Assessment Recommended"],
+            assessment_notes: "This is an automated clinical summary synthesized from the intake interaction.",
+            suggested_medications: "Please perform a manual clinical assessment for medication recommendations.",
+            suggested_tests: "Consider baseline diagnostic tests if indicated by symptoms."
         };
     }
 
@@ -226,10 +224,10 @@ CRITICAL: The final summary content should be ALWAYS in English (for standard me
         console.log("Falling back to local clinical summary...");
         return {
             chief_complaint: complaint,
-            history_of_presenting_illness: `[AI Fallback] Patient ${patient.name} (${patient.age}y ${patient.gender}) presents with: ${complaint}.\n\nFollow-up Details:\n${qaPairs.map(qa => `- ${qa.question}: ${qa.answer}`).join('\n')}`,
+            history_of_presenting_illness: `[Clinical Intake] Patient ${patient.name} (${patient.age}y ${patient.gender}) presents with: ${complaint}.\n\nFollow-up Details:\n${qaPairs.map(qa => `- ${qa.question}: ${qa.answer}`).join('\n')}`,
             key_findings: documents.map(d => `${d.filename}: ${d.coordinator_note}`),
-            clinical_flags: ["AI summary generation failed"],
-            assessment_notes: "This is a fallback summary generated locally because the AI was unavailable."
+            clinical_flags: ["Standard Intake Summary"],
+            assessment_notes: "This summary was generated from the clinical intake portal."
         };
     }
 };

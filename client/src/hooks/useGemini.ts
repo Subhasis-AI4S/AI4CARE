@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 
 export const useGemini = () => {
-    const { token } = useAppContext();
+    const { fetchWithCsrf } = useAppContext();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -10,12 +10,9 @@ export const useGemini = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const res = await fetch('/api/gemini/questions', {
+            const res = await fetchWithCsrf('/api/gemini/questions', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ complaint, language })
             });
             const data = await res.json();
@@ -33,12 +30,9 @@ export const useGemini = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const res = await fetch('/api/gemini/summary', {
+            const res = await fetchWithCsrf('/api/gemini/summary', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, language })
             });
             const data = await res.json();
@@ -56,12 +50,9 @@ export const useGemini = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const res = await fetch('/api/gemini/document-note', {
+            const res = await fetchWithCsrf('/api/gemini/document-note', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename, note: noteContext, language })
             });
             const data = await res.json();

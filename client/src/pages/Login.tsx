@@ -15,37 +15,39 @@ export const Login = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const navigate = useNavigate();
-    const { login } = useAppContext();
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError(null);
-        setIsSubmitting(true);
-
-        try {
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, tenantId })
-            });
-            
-            const data = await res.json();
-            
-            if (!res.ok) {
-                throw new Error(data.error || 'Login failed');
-            }
-
-            login(data.token, data.user);
-            navigate('/');
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    const { login, fetchWithCsrf } = useAppContext();
+ 
+     const handleSubmit = async (e: React.FormEvent) => {
+         e.preventDefault();
+         setError(null);
+         setIsSubmitting(true);
+ 
+         try {
+             if (!fetchWithCsrf) throw new Error('Security context not initialized');
+             
+             const res = await fetchWithCsrf('/api/auth/login', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ email, password, tenantId })
+             });
+             
+             const data = await res.json();
+             
+             if (!res.ok) {
+                 throw new Error(data.error || 'Login failed');
+             }
+ 
+             login(data.user);
+             navigate('/');
+         } catch (err: any) {
+             setError(err.message);
+         } finally {
+             setIsSubmitting(false);
+         }
+     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 relative overflow-hidden">
             {/* Background Decorative Elements */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-teal-100 rounded-full blur-[120px] opacity-50 outline-none select-none pointer-events-none" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-100 rounded-full blur-[120px] opacity-50 outline-none select-none pointer-events-none" />
@@ -55,15 +57,15 @@ export const Login = () => {
                     <div className="w-16 h-16 bg-gradient-header rounded-2xl flex items-center justify-center shadow-lg mb-4 transform hover:rotate-6 transition-transform">
                         <Stethoscope className="w-9 h-9 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                         {isStaffMode ? 'Staff Sign In' : 'Clinic Sign In'}
                     </h1>
-                    <p className="text-slate-500 mt-2 font-medium text-center">
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium text-center">
                         {isStaffMode ? 'Access your clinic workspace' : 'Cloud Clinical Documentation'}
                     </p>
                 </div>
 
-                <div className="bg-white/80 backdrop-blur-xl border border-white rounded-3xl shadow-2xl p-8 shadow-slate-200/50">
+                <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white rounded-3xl shadow-2xl p-8 shadow-slate-200/50">
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {error && (
                             <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-start gap-3 border border-red-100 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -74,7 +76,7 @@ export const Login = () => {
 
                         {isStaffMode && (
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-slate-700 ml-1">{t('common.clinic_id')}</label>
+                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">{t('common.clinic_id')}</label>
                                 <div className="relative group">
                                     <Activity className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
                                     <input
@@ -82,7 +84,7 @@ export const Login = () => {
                                         required
                                         value={tenantId}
                                         onChange={(e) => setTenantId(e.target.value)}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-slate-900 placeholder:text-slate-400 font-mono text-sm"
+                                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400 font-mono text-sm"
                                         placeholder="Enter clinic unique ID"
                                     />
                                 </div>
@@ -90,7 +92,7 @@ export const Login = () => {
                         )}
 
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-slate-700 ml-1">Email Address</label>
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Email Address</label>
                             <div className="relative group">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
                                 <input
@@ -98,14 +100,14 @@ export const Login = () => {
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-slate-900 placeholder:text-slate-400"
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                                     placeholder="your@email.com"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-slate-700 ml-1">Password</label>
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Password</label>
                             <div className="relative group">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
                                 <input
@@ -113,7 +115,7 @@ export const Login = () => {
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-slate-900 placeholder:text-slate-400"
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                                     placeholder="••••••••"
                                 />
                             </div>
@@ -138,13 +140,13 @@ export const Login = () => {
                     <div className="mt-8 pt-6 border-t border-slate-100 text-center flex flex-col gap-4">
                         <Link 
                             to={isStaffMode ? '/login' : '/login/staff'} 
-                            className="text-sm font-bold text-teal-600 hover:text-teal-700 transition-colors flex items-center justify-center gap-2 bg-teal-50 py-2 rounded-xl"
+                            className="text-sm font-bold text-teal-600 hover:text-teal-700 transition-colors flex items-center justify-center gap-2 bg-teal-50 dark:bg-teal-900/30 py-2 rounded-xl"
                         >
                             {isStaffMode ? 'Switch to Admin Login' : 'Switch to Staff Login'}
                             <ArrowRight className="w-4 h-4" />
                         </Link>
                         
-                        <p className="text-slate-500 text-sm font-medium">
+                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
                             Don't have an account?{' '}
                             <Link to="/register" className="text-teal-600 font-bold hover:text-teal-700 transition-colors ml-1">
                                 Join AI4CARE
