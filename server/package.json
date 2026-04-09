@@ -15,9 +15,12 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@azure/storage-blob": "^12.31.0",
+    "@google-cloud/storage": "^7.19.0",
     "@google/genai": "^1.44.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.71.1",
+    "cloudinary": "^2.9.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "csurf": "^1.11.0",

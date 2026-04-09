@@ -10,6 +10,7 @@ const csrf = require('csurf');
 const { authenticateToken } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 const { addSummaryJob } = require('./utils/queue');
+const storageService = require('./utils/storage');
 // Start the worker
 if (process.env.NODE_ENV !== 'test') {
     require('./workers/aiWorker');
@@ -384,9 +385,17 @@ app.post('/api/sessions/:id/documents', authenticateToken, upload.single('docume
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
     try {
+        const uploadResult = await storageService.uploadFile(req.file);
+        
         const result = await db.run('INSERT INTO documents (session_id, filename, file_path, coordinator_note, tenant_id) VALUES (?, ?, ?, ?, ?)',
-            [sessionId, req.file.originalname, req.file.filename, note, req.tenantId]);
-        res.json({ id: result.lastID, filename: req.file.originalname, tenant_id: req.tenantId });
+            [sessionId, req.file.originalname, uploadResult.url || uploadResult.fileName, note, req.tenantId]);
+        
+        // Cleanup local file if it was uploaded to cloud
+        if (uploadResult.provider !== 'local' && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+
+        res.json({ id: result.lastID, filename: req.file.originalname, tenant_id: req.tenantId, url: uploadResult.url });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -398,8 +407,15 @@ app.get('/api/documents/:id/download', authenticateToken, async (req, res) => {
         const doc = await db.get('SELECT * FROM documents WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
         if (!doc) return res.status(404).json({ error: 'Document not found' });
 
-        if (doc.file_path && fs.existsSync(path.join(uploadsDir, doc.file_path))) {
-            return res.sendFile(path.join(uploadsDir, doc.file_path));
+        // If it's a full URL (Cloudinary/Azure/GCP), redirect to it
+        if (doc.file_path.startsWith('http')) {
+            return res.redirect(doc.file_path);
+        }
+
+        // Local fallback
+        const localPath = path.join(uploadsDir, doc.file_path);
+        if (fs.existsSync(localPath)) {
+            return res.sendFile(localPath);
         }
 
         res.status(404).json({ error: 'Document content not found' });
