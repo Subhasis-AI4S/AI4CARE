@@ -121,9 +121,9 @@ app.get('/api/sessions/:id', authenticateToken, async (req, res) => {
         data.session = session;
 
         const [qas, docs, summary] = await Promise.all([
-            db.all('SELECT * FROM qa_pairs WHERE session_id = ? AND tenant_id = ? ORDER BY order_index ASC', [sessionId, req.tenantId]),
-            db.all('SELECT * FROM documents WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]),
-            db.get('SELECT * FROM summaries WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId])
+            db.all('SELECT * FROM qa_pairs WHERE session_id::text = ? AND tenant_id::text = ? ORDER BY order_index ASC', [sessionId, req.tenantId]),
+            db.all('SELECT * FROM documents WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]),
+            db.get('SELECT * FROM summaries WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId])
         ]);
 
         data.qa = qas;
@@ -136,13 +136,18 @@ app.get('/api/sessions/:id', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/sessions', authenticateToken, async (req, res) => {
-    let { patient_id, complaint } = req.body;
-    patient_id = parseInt(patient_id);
+    const { patient_id, complaint } = req.body;
     try {
         const result = await db.run("INSERT INTO sessions (patient_id, complaint, status, tenant_id) VALUES (?, ?, 'in_progress', ?)", [patient_id, complaint, req.tenantId]);
+        
+        if (!result.lastID) {
+            console.error(`[CRITICAL] Session creation failed to return an ID. Tenant: ${req.tenantId}`);
+        }
+        
         res.json({ id: result.lastID, patient_id, complaint, status: 'in_progress', tenant_id: req.tenantId });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[Session Create] Failed:', err);
+        res.status(500).json({ error: 'Failed to create session: ' + err.message });
     }
 });
 

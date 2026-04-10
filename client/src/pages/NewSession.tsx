@@ -181,6 +181,9 @@ export const NewSession = () => {
             const sData = await sRes.json();
             setSessionId(sData.id);
             
+            // Navigate to the permanent session URL so refresh doesn't break state
+            navigate(`/session/resume/${sData.id}`, { replace: true });
+            
             setStep(2);
         } catch (err) {
             console.error(err);
