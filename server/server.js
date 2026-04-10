@@ -224,12 +224,16 @@ app.post('/api/sessions/:id/qa', authenticateToken, async (req, res) => {
 
     try {
         const session = await db.get('SELECT id FROM sessions WHERE id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
-        if (!session) return res.status(403).json({ error: 'Unauthorized session access' });
+        if (!session) {
+            console.warn(`[QA] Unauthorized access attempt for session ${sessionId} by tenant ${req.tenantId}`);
+            return res.status(403).json({ error: 'Unauthorized session access' });
+        }
 
         const result = await db.run('INSERT INTO qa_pairs (session_id, question, answer, order_index, tenant_id) VALUES (?, ?, ?, ?, ?)', [sessionId, question, answer, order_index, req.tenantId]);
-        res.json({ id: result.lastID, question, answer, tenant_id: req.tenantId });
+        res.json({ id: result.lastID, question, answer });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[QA] Insert failed:', err);
+        res.status(500).json({ error: 'Failed to save answer record' });
     }
 });
 
@@ -247,12 +251,12 @@ app.post('/api/sessions/:id/summary', authenticateToken, async (req, res) => {
     } = req.body;
 
     try {
-        const row = await db.get('SELECT id FROM summaries WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+        const row = await db.get('SELECT id FROM summaries WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
 
         if (row) {
             await db.run(`UPDATE summaries SET 
                     chief_complaint = ?, history_of_presenting_illness = ?, key_findings = ?, clinical_flags = ?, assessment_notes = ?, suggested_medications = ?, suggested_tests = ?, edited_by_coordinator = 1, updated_at = CURRENT_TIMESTAMP 
-                    WHERE session_id = ? AND tenant_id = ?`,
+                    WHERE session_id::text = ? AND tenant_id::text = ?`,
                 [chief_complaint, history_of_presenting_illness, JSON.stringify(key_findings), JSON.stringify(clinical_flags), assessment_notes, suggested_medications, suggested_tests, sessionId, req.tenantId]);
             res.json({ success: true, updated: true });
         } else {
@@ -261,7 +265,7 @@ app.post('/api/sessions/:id/summary', authenticateToken, async (req, res) => {
             res.json({ success: true, id: result.lastID });
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Failed to save summary: ' + err.message });
     }
 });
 
