@@ -12,13 +12,13 @@ const processSummary = async (data) => {
     }
 
     try {
-        // 1. Fetch data for summary
-        const patientSession = await db.get('SELECT s.*, p.name, p.age, p.gender FROM sessions s JOIN patients p ON s.patient_id = p.id WHERE s.id = ? AND s.tenant_id = ?', [sid, tenantId]);
+        // 1. Fetch data for summary with type-agnostic casting
+        const patientSession = await db.get('SELECT s.*, p.name, p.age, p.gender FROM sessions s JOIN patients p ON s.patient_id = p.id WHERE s.id::text = ? AND s.tenant_id::text = ?', [sessionId, tenantId]);
         if (!patientSession) throw new Error('Session not found');
 
         const [qas, docs] = await Promise.all([
-            db.all('SELECT * FROM qa_pairs WHERE session_id = ? AND tenant_id = ? ORDER BY order_index ASC', [sid, tenantId]),
-            db.all('SELECT * FROM documents WHERE session_id = ? AND tenant_id = ?', [sid, tenantId])
+            db.all('SELECT * FROM qa_pairs WHERE session_id::text = ? AND tenant_id::text = ? ORDER BY order_index ASC', [sessionId, tenantId]),
+            db.all('SELECT * FROM documents WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, tenantId])
         ]);
 
         // 2. Generate summary using Gemini

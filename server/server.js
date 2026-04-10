@@ -110,12 +110,13 @@ app.get('/api/sessions', authenticateToken, async (req, res) => {
 });
 
 app.get('/api/sessions/:id', authenticateToken, async (req, res) => {
-    const sessionId = parseInt(req.params.id);
-    if (isNaN(sessionId)) return res.status(400).json({ error: 'Invalid session ID' });
+    const sessionId = req.params.id;
     const data = {};
+    const tenantIdentifier = req.tenantId;
 
     try {
-        const session = await db.get('SELECT s.*, p.name, p.age, p.gender FROM sessions s JOIN patients p ON s.patient_id = p.id WHERE s.id = ? AND s.tenant_id = ?', [sessionId, req.tenantId]);
+        // Fetch session with type-safe casting
+        const session = await db.get('SELECT s.*, p.name, p.age, p.gender FROM sessions s JOIN patients p ON s.patient_id = p.id WHERE s.id::text = ? AND s.tenant_id::text = ?', [sessionId, tenantIdentifier]);
         if (!session) return res.status(404).json({ error: 'Session not found or unauthorized' });
         data.session = session;
 
@@ -185,17 +186,17 @@ app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
 
     try {
         await db.transaction(async (tx) => {
-            // Check session exists and belongs to tenant
-            const session = await tx.get('SELECT id FROM sessions WHERE id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+            // Check session exists and belongs to tenant with type-agnostic casting
+            const session = await tx.get('SELECT id FROM sessions WHERE id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
             if (!session) throw new Error('Session not found or unauthorized');
 
             // Delete associated records
-            await tx.run('DELETE FROM qa_pairs WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
-            await tx.run('DELETE FROM documents WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
-            await tx.run('DELETE FROM summaries WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+            await tx.run('DELETE FROM qa_pairs WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
+            await tx.run('DELETE FROM documents WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
+            await tx.run('DELETE FROM summaries WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
             
             // Delete the session itself
-            const result = await tx.run('DELETE FROM sessions WHERE id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+            const result = await tx.run('DELETE FROM sessions WHERE id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
             if (result.changes === 0) throw new Error('Failed to delete session record');
         });
 
@@ -235,7 +236,7 @@ app.post('/api/sessions/:id/qa', authenticateToken, async (req, res) => {
 
 // Summary API
 app.post('/api/sessions/:id/summary', authenticateToken, async (req, res) => {
-    const sessionId = parseInt(req.params.id);
+    const sessionId = req.params.id;
     const {
         chief_complaint,
         history_of_presenting_illness,
