@@ -77,7 +77,7 @@ export const PhysicianView = () => {
         </div>
     );
     
-    if (!data || !data.session || !data.summary) return (
+    if (!data || !data.session) return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-800/50">
             <div className="text-center bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/50">
                 <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
@@ -88,7 +88,16 @@ export const PhysicianView = () => {
         </div>
     );
 
-    const { session, summary } = data;
+    const { session } = data;
+    const summary = data.summary || {
+        chief_complaint: session.complaint,
+        history_of_presenting_illness: "Medical history collection completed. Clinical summary is being processed or was skipped.",
+        key_findings: [],
+        clinical_flags: ["Summary Pending / Manual Review Required"],
+        assessment_notes: "Physician assessment required. Automated summary was not generated of is still in queue.",
+        suggested_medications: "",
+        suggested_tests: ""
+    };
     
     let flags = [];
     try { 
