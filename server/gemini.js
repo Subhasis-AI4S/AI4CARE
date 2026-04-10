@@ -46,18 +46,22 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     const templates = await db.all("SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = 'default-clinic-id'", [tenantId]);
     const lowerComplaint = (complaint || '').toLowerCase();
     
-    const matchedTemplate = templates.find(t => {
+    const matchedTemplates = templates.filter(t => {
         const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
-        // Normalize complaint: remove punctuation and split into words
         const complaintWords = lowerComplaint.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").split(/\s+/);
         
         return keywords.some(k => {
-            // Direct inclusion (e.g. "my fever is high" contains "fever")
             if (lowerComplaint.includes(k)) return true;
-            // Word-level match for short keywords
             return complaintWords.some(word => word === k);
         });
     });
+
+    // Prioritize template matching the selected language code in its name (e.g. "(BN)", "-HI")
+    const matchedTemplate = matchedTemplates.find(t => {
+        const name = t.name.toUpperCase();
+        const langCode = language.toUpperCase();
+        return name.includes(`(${langCode})`) || name.includes(`-${langCode}`) || name.includes(` ${langCode}`);
+    }) || matchedTemplates[0];
 
     if (matchedTemplate) {
         try {
