@@ -163,7 +163,6 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
     const apiKey = await getApiKey(tenantId);
     
     if (!apiKey) {
-        // ... fallback clinical summary logic ...
         const keyFindings = documents.map(d => `${d.filename}: ${d.coordinator_note}`);
         return {
             chief_complaint: complaint,
@@ -177,57 +176,51 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
     }
 
     const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+    const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
 
-    const langNames = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' };
-    const intakeLang = langNames[language] || 'English';
-
-    // Format inputs
     const qaPairsText = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
     const docsText = documents.map(d => `- [${d.filename}]: ${d.coordinator_note}`).join('\n');
 
-    const systemPrompt = `You are a clinical documentation assistant. Based on the following patient intake information (provided in ${intakeLang}), write a structured consultation summary for the physician. 
-Patient: ${patient.name}, Age: ${patient.age}, Gender: ${patient.gender}. 
-Chief Complaint: ${complaint}. 
-Follow-up Q&A: \n${qaPairsText}\n 
-Uploaded documents: \n${docsText || 'None'}\n
- 
-NOTE: The input text might be in Roman-script transliteration (Hinglish/Benglish). You must analyze the meaning correctly.
+    const systemPrompt = `You are a clinical documentation assistant. write a structured consultation summary.
+Patient: ${patient.name}, ${patient.age}y, ${patient.gender}.
+Chief Complaint: ${complaint}
+Follow-up Q&A: \n${qaPairsText}\n
+Docs: \n${docsText || 'None'}\n
 
-Format your response as JSON with these exact keys: 
-- chief_complaint (string)
-- history_of_presenting_illness (detailed narrative)
-- key_findings (bullet list as array of strings)
-- clinical_flags (array of strings, empty if none)
-- assessment_notes (brief professional summary)
-- suggested_medications (string, evidence-based medication suggestions for the doctor to review)
-- suggested_tests (string, recommended diagnostic tests or follow-ups)
+Format response as JSON with:
+- chief_complaint
+- history_of_presenting_illness (narrative)
+- key_findings (array of strings)
+- clinical_flags (array of strings)
+- assessment_notes
+- suggested_medications
+- suggested_tests
 
-CRITICAL: The final summary content should be ALWAYS in English (for standard medical records), regardless of the input script or language. Use high-level clinical vocabulary. Return only valid JSON.`;
+SUMMARY CONTENT MUST BE IN ENGLISH for medical records. Use high-level clinical vocabulary. Output ONLY raw JSON.`;
 
     try {
-        console.log(`--- Gemini Summary Generation Started for Tenant: ${tenantId} ---`);
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
-            contents: systemPrompt,
-            config: {
-                responseMimeType: 'application/json',
-                safetySettings: safetySettings
-            }
+        console.log(`--- Gemini AI Summary Generation Started for Session via ${targetLang} ---`);
+        const model = ai.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            generationConfig: { responseMimeType: "application/json" }
         });
         
-        const text = response.text || (response.outputs && response.outputs[0]?.text) || '{}';
+        const result = await model.generateContent(systemPrompt);
+        const response = await result.response;
+        const text = response.text().trim();
         const summary = JSON.parse(text);
         console.log("Successfully generated AI summary.");
         return summary;
     } catch (e) {
         console.error("Gemini summary generation failed:", e.message);
-        console.log("Falling back to local clinical summary...");
         return {
             chief_complaint: complaint,
-            history_of_presenting_illness: `[Clinical Intake] Patient ${patient.name} (${patient.age}y ${patient.gender}) presents with: ${complaint}.\n\nFollow-up Details:\n${qaPairs.map(qa => `- ${qa.question}: ${qa.answer}`).join('\n')}`,
+            history_of_presenting_illness: `[Clinical Intake Fallback] Patient ${patient.name} (${patient.age}y ${patient.gender}) presents with: ${complaint}.\n\nFollow-up Details:\n${qaPairs.map(qa => `- ${qa.question}: ${qa.answer}`).join('\n')}`,
             key_findings: documents.map(d => `${d.filename}: ${d.coordinator_note}`),
-            clinical_flags: ["Standard Intake Summary"],
-            assessment_notes: "This summary was generated from the clinical intake portal."
+            clinical_flags: ["Standard Intake Summary (AI Fallback)"],
+            assessment_notes: "This summary was generated via clinical fallback logic due to an AI timeout.",
+            suggested_medications: "N/A - Review required",
+            suggested_tests: "N/A - Review required"
         };
     }
 };
