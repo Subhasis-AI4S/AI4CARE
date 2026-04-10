@@ -131,25 +131,65 @@ const database = {
         });
     },
 
-    // Exposes raw pg pool query for advanced use (transactions, etc.)
-    query: async (sql, params = []) => {
-        if (isPg) {
-            return db.query(convertPlaceholders(sql), params);
-        }
-        throw new Error('db.query() is only available in PostgreSQL mode');
-    },
-
-    // --- Transaction helpers (PostgreSQL + SQLite) ---
-    beginTransaction: async () => {
+    // Transaction Helper: handles BEGIN/COMMIT/ROLLBACK automatically
+    transaction: async (callback) => {
         if (isPg) {
             const client = await db.connect();
-            await client.query('BEGIN');
-            return client;
+            try {
+                await client.query('BEGIN');
+                const tx = {
+                    run: async (sql, params = []) => {
+                        let pgSql = convertPlaceholders(sql);
+                        const isInsert = /^\s*INSERT/i.test(sql);
+                        const tableMatch = sql.match(/INTO\s+(\w+)/i);
+                        const tableName = tableMatch ? tableMatch[1].toLowerCase() : '';
+                        const hasTextPk = TEXT_PK_TABLES.has(tableName);
+                        if (isInsert && !hasTextPk && !/RETURNING/i.test(sql)) pgSql += ' RETURNING id';
+                        const result = await client.query(pgSql, params);
+                        return { lastID: isInsert && !hasTextPk && result.rows[0] ? result.rows[0].id : null, changes: result.rowCount };
+                    },
+                    get: async (sql, params = []) => {
+                        const res = await client.query(convertPlaceholders(sql), params);
+                        return res.rows[0];
+                    },
+                    all: async (sql, params = []) => {
+                        const res = await client.query(convertPlaceholders(sql), params);
+                        return res.rows;
+                    }
+                };
+                const result = await callback(tx);
+                await client.query('COMMIT');
+                return result;
+            } catch (err) {
+                await client.query('ROLLBACK');
+                throw err;
+            } finally {
+                client.release();
+            }
         }
         return new Promise((resolve, reject) => {
-            db.run('BEGIN TRANSACTION', (err) => err ? reject(err) : resolve(null));
+            db.serialize(async () => {
+                try {
+                    db.run('BEGIN TRANSACTION');
+                    const tx = {
+                        run: (sql, params = []) => new Promise((res, rej) => db.run(sql, params, function(err) { err ? rej(err) : res({ lastID: this.lastID, changes: this.changes }) })),
+                        get: (sql, params = []) => new Promise((res, rej) => db.get(sql, params, (err, row) => err ? rej(err) : res(row))),
+                        all: (sql, params = []) => new Promise((res, rej) => db.all(sql, params, (err, rows) => err ? rej(err) : res(rows)))
+                    };
+                    const result = await callback(tx);
+                    db.run('COMMIT', (err) => err ? reject(err) : resolve(result));
+                } catch (err) {
+                    db.run('ROLLBACK', () => reject(err));
+                }
+            });
         });
     },
+
+    // Exposes raw pg pool query for advanced use
+    query: async (sql, params = []) => {
+        if (isPg) return db.query(convertPlaceholders(sql), params);
+        throw new Error('db.query() is only available in PostgreSQL mode');
+    }
 };
 
 module.exports = database;
