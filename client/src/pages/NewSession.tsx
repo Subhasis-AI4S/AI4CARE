@@ -55,7 +55,7 @@ export const NewSession = () => {
                 if (!fetchWithCsrf) return;
                 const res = await fetchWithCsrf(`/api/sessions/${id}`);
                 
-                if (res.status === 401 || res.status === 403) return logout();
+                if (res.status === 401) return logout();
                 if (!res.ok) throw new Error('Failed to load session');
                 
                 const data = await res.json();
@@ -169,7 +169,7 @@ export const NewSession = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(patient)
             });
-            if (pRes.status === 401 || pRes.status === 403) return logout();
+            if (pRes.status === 401) return logout();
             const pData = await pRes.json();
 
             const sRes = await fetchWithCsrf('/api/sessions', {
@@ -177,7 +177,7 @@ export const NewSession = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ patient_id: pData.id, complaint: '' })
             });
-            if (sRes.status === 401 || sRes.status === 403) return logout();
+            if (sRes.status === 401) return logout();
             const sData = await sRes.json();
             setSessionId(sData.id);
             
@@ -200,7 +200,7 @@ export const NewSession = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ complaint: finalComplaint })
             });
-            if (updateRes.status === 401 || updateRes.status === 403) return logout();
+            if (updateRes.status === 401) return logout();
 
             const questions = await generateQuestions(finalComplaint, interviewLanguage);
             setAiQuestions(questions);
@@ -236,7 +236,7 @@ export const NewSession = () => {
                 order_index: currentQIndex
             })
         });
-        if (qaRes.status === 401 || qaRes.status === 403) return logout();
+        if (qaRes.status === 401) return logout();
 
         if (currentQIndex < aiQuestions.length - 1) {
             setCurrentQIndex(currentQIndex + 1);
@@ -267,7 +267,7 @@ export const NewSession = () => {
                 method: 'POST',
                 body: formData
             });
-            if (res.status === 401 || res.status === 403) return logout();
+            if (res.status === 401) return logout();
             const data = await res.json();
             
             setDocuments([...documents, { ...data, coordinator_note: note }]);
@@ -298,7 +298,7 @@ export const NewSession = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(summary)
             });
-            if (sumRes.status === 401 || sumRes.status === 403) return logout();
+            if (sumRes.status === 401) return logout();
 
             // Mark session complete
             await fetchWithCsrf(`/api/sessions/${sessionId}`, {

@@ -225,8 +225,8 @@ app.post('/api/sessions/:id/qa', authenticateToken, async (req, res) => {
     try {
         const session = await db.get('SELECT id FROM sessions WHERE id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
         if (!session) {
-            console.warn(`[QA] Unauthorized access attempt for session ${sessionId} by tenant ${req.tenantId}`);
-            return res.status(403).json({ error: 'Unauthorized session access' });
+            console.error(`[CRITICAL] QA Authorization Failure: Session=${sessionId}, Tenant=${req.tenantId}. Session not found or belongs to another tenant.`);
+            return res.status(404).json({ error: 'Session not found or unauthorized' });
         }
 
         const result = await db.run('INSERT INTO qa_pairs (session_id, question, answer, order_index, tenant_id) VALUES (?, ?, ?, ?, ?)', [sessionId, question, answer, order_index, req.tenantId]);
