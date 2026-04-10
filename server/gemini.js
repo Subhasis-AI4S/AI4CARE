@@ -42,60 +42,60 @@ const getTemplatesContext = async (complaint, tenantId) => {
 };
 
 const generateQuestions = async (complaint, language = 'en', tenantId) => {
-    const apiKey = await getApiKey(tenantId);
-    const templatesContext = await getTemplatesContext(complaint, tenantId);
+    // 1. Try local templates FIRST for exact clinical matches
+    const templates = await db.all("SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = 'default-clinic-id'", [tenantId]);
+    const lowerComplaint = (complaint || '').toLowerCase();
     
+    const matchedTemplate = templates.find(t => {
+        const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase());
+        return keywords.some(k => k && lowerComplaint.includes(k));
+    });
+
+    if (matchedTemplate) {
+        try {
+            console.log(`[Templates] Perfect match found: ${matchedTemplate.name}. Bypassing AI generation.`);
+            const questions = JSON.parse(matchedTemplate.questions || '[]');
+            // Return in the expected format: [{ text: "...", source: "Template" }]
+            return questions.map(q => {
+                const text = typeof q === 'string' ? q : (q[language] || q.en || q.hi || q.bn || 'Untitled Question');
+                return { text, source: 'Template' };
+            });
+        } catch (e) {
+            console.error("[Templates] Failed to parse template questions:", e);
+        }
+    }
+
+    // 2. Fall back to Gemini if no template matches
+    const apiKey = await getApiKey(tenantId);
     if (!apiKey) {
-        return generateQuestionsInternalFallback(complaint, language);
+        return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
     }
 
     const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
-    
-    const langNames = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' };
-    const targetLang = langNames[language] || 'English';
+    const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
 
-    const systemPrompt = `You are a highly professional Clinical Intake Assistant. Your goal is to help a physician collect a focused medical history.
+    const systemPrompt = `You are a Clinical Intake Assistant. Help a physician collect a focused medical history.
 Patient Complaint: ${complaint}
-${templatesContext ? '\n' + templatesContext : ''}
 
 STRICT GUIDELINES:
-1. Generate exactly 6 professional, medically-relevant follow-up questions.
-2. The questions MUST be written in ${targetLang} (${language}) native script.
-3. IMPORTANT: The patient input might be written in Roman-script transliteration (e.g., "mujhe bukhar he" for Hindi or "amar jor hoyeche" for Bengali). You must correctly identify the medical intent and the language, then respond in the native script of ${targetLang}.
-4. Use clinical terminology appropriately (e.g., onset, character, radiation, relieving factors) following the SOCRATES or OPQRST framework.
-5. Questions MUST be professional, objective, and empathetic. No diagnostics.
-6. ABSOLUTELY PROHIBITED: Any sexually explicit, offensive, nonsensical, or unprofessional language.
-7. Return the questions as a JSON array of strings in ${targetLang}. Do not include any other text or markdown formatting.`;
+1. Generate 5-8 professional, medically-relevant follow-up questions tailored to the complaint.
+2. Respond ONLY in ${targetLang} (${language}) native script.
+3. Use clinical frameworks like SOCRATES/OPQRST.
+4. No diagnosis. Be empathetic and professional.
+5. Return ONLY a JSON array of strings. No markdown. No jokes.`;
 
     try {
-        console.log(`--- Gemini Question Generation Started for Tenant: ${tenantId} ---`);
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-lite',
-            contents: systemPrompt,
-            config: {
-                safetySettings: safetySettings
-            }
-        });
-        
-        let text = response.text || '';
-        if (!text && response.outputs && response.outputs[0]) {
-             text = response.outputs[0].text;
-        }
-        
-        if (!text) {
-            throw new Error('Gemini returned an empty response.');
-        }
-
-        // Clean up markdown if it sneaked in
-        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        console.log(`--- Gemini AI Question Generation Started for: ${complaint} ---`);
+        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(systemPrompt);
+        const response = await result.response;
+        let text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
         
         const questions = JSON.parse(text);
-        console.log(`Successfully generated ${questions.length} questions.`);
         return Array.isArray(questions) ? questions.map(q => ({ text: q, source: 'AI' })) : [];
     } catch (e) {
         console.error("Gemini API call failed:", e.message);
-        console.log("Falling back to local templates...");
-        return await generateQuestionsInternalFallback(complaint, language);
+        return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
     }
 };
 
