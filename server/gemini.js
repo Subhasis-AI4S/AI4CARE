@@ -48,18 +48,21 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     
     const matchedTemplates = templates.filter(t => {
         const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
-        const complaintWords = lowerComplaint.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").split(/\s+/);
+        // Normalize complaint: remove punctuation and split into words
+        const cleanComplaint = lowerComplaint.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g," ");
+        const complaintWords = cleanComplaint.split(/\s+/).filter(w => w.length > 0);
         
         return keywords.some(k => {
-            if (lowerComplaint.includes(k)) return true;
-            return complaintWords.some(word => word === k);
+            // Check if the keyword exists as a whole phrase or word in the clean complaint
+            const regex = new RegExp(`\\b${k}\\b`, 'i');
+            return regex.test(cleanComplaint) || k === lowerComplaint.trim();
         });
     });
 
     // Prioritize template matching the selected language code in its name (e.g. "(BN)", "-HI")
     const matchedTemplate = matchedTemplates.find(t => {
-        const name = t.name.toUpperCase();
-        const langCode = language.toUpperCase();
+        const name = (t.name || '').toUpperCase();
+        const langCode = (language || 'en').toUpperCase();
         return name.includes(`(${langCode})`) || name.includes(`-${langCode}`) || name.includes(` ${langCode}`);
     }) || matchedTemplates[0];
 
