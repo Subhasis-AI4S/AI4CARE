@@ -70,7 +70,12 @@ export const NewSession = () => {
                 });
                 setComplaintText(data.session.complaint || '');
                 if (data.qa && data.qa.length > 0) {
-                    setAiQuestions(data.qa.map((q: any) => ({ text: q.question, source: 'DB' })));
+                    setAiQuestions(data.qa.map((q: any) => {
+                        const questionText = typeof q.question === 'string' 
+                            ? q.question 
+                            : (q.question?.en || q.question?.hi || q.question?.bn || 'Untitled Question');
+                        return { text: questionText, source: 'DB' };
+                    }));
                     setAnswers(data.qa.map((q: any) => q.answer));
                     setCurrentQIndex(data.qa.length - 1); 
                 }
