@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const dotenv = require('dotenv');
 const db = require('./db/database');
 const path = require('path');
@@ -50,6 +51,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
+app.use(compression());
 app.use(cors({
     origin: true, // Allow all origins for dev, or specify frontend URL
     credentials: true

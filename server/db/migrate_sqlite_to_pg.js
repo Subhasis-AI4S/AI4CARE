@@ -107,28 +107,28 @@ const TABLE_INSERT_SQL = {
 };
 
 const TABLE_SELECT_SQL = {
-    tenants:    'SELECT id, name, status, plan, created_at FROM tenants',
-    users:      'SELECT id, tenant_id, email, password_hash, full_name, role, created_at FROM users',
-    patients:   'SELECT id, name, age, gender, contact, tenant_id, created_at FROM patients',
-    sessions:   'SELECT id, patient_id, complaint, status, tenant_id, created_at, updated_at FROM sessions',
-    qa_pairs:   'SELECT id, session_id, question, answer, order_index, tenant_id FROM qa_pairs',
-    documents:  'SELECT id, session_id, filename, file_path, coordinator_note, tenant_id, uploaded_at FROM documents',
-    summaries:  'SELECT id, session_id, chief_complaint, history_of_presenting_illness, key_findings, clinical_flags, assessment_notes, generated_at, edited_by_coordinator, tenant_id FROM summaries',
-    templates:  'SELECT id, name, trigger_keywords, questions, tenant_id, created_at FROM templates',
-    settings:   'SELECT key, value, tenant_id FROM settings',
+    tenants: 'SELECT id, name, status, plan, created_at FROM tenants',
+    users: 'SELECT id, tenant_id, email, password_hash, full_name, role, created_at FROM users',
+    patients: 'SELECT id, name, age, gender, contact, tenant_id, created_at FROM patients',
+    sessions: 'SELECT id, patient_id, complaint, status, tenant_id, created_at, updated_at FROM sessions',
+    qa_pairs: 'SELECT id, session_id, question, answer, order_index, tenant_id FROM qa_pairs',
+    documents: 'SELECT id, session_id, filename, file_path, coordinator_note, tenant_id, uploaded_at FROM documents',
+    summaries: 'SELECT id, session_id, chief_complaint, history_of_presenting_illness, key_findings, clinical_flags, assessment_notes, generated_at, edited_by_coordinator, tenant_id FROM summaries',
+    templates: 'SELECT id, name, trigger_keywords, questions, tenant_id, created_at FROM templates',
+    settings: 'SELECT key, value, tenant_id FROM settings',
 };
 
 function rowToValues(table, row) {
     switch (table) {
-        case 'tenants':    return [row.id, row.name, row.status, row.plan, row.created_at];
-        case 'users':      return [row.id, row.tenant_id, row.email, row.password_hash, row.full_name, row.role, row.created_at];
-        case 'patients':   return [row.id, row.name, row.age, row.gender, row.contact, row.tenant_id, row.created_at];
-        case 'sessions':   return [row.id, row.patient_id, row.complaint, row.status, row.tenant_id, row.created_at, row.updated_at];
-        case 'qa_pairs':   return [row.id, row.session_id, row.question, row.answer, row.order_index, row.tenant_id];
-        case 'documents':  return [row.id, row.session_id, row.filename, row.file_path, row.coordinator_note, row.tenant_id, row.uploaded_at];
-        case 'summaries':  return [row.id, row.session_id, row.chief_complaint, row.history_of_presenting_illness, row.key_findings, row.clinical_flags, row.assessment_notes, row.tenant_id, row.generated_at, row.edited_by_coordinator ? true : false];
-        case 'templates':  return [row.id, row.name, row.trigger_keywords, row.questions, row.tenant_id, row.created_at];
-        case 'settings':   return [row.key, row.value, row.tenant_id || 'default-clinic-id'];
+        case 'tenants': return [row.id, row.name, row.status, row.plan, row.created_at];
+        case 'users': return [row.id, row.tenant_id, row.email, row.password_hash, row.full_name, row.role, row.created_at];
+        case 'patients': return [row.id, row.name, row.age, row.gender, row.contact, row.tenant_id, row.created_at];
+        case 'sessions': return [row.id, row.patient_id, row.complaint, row.status, row.tenant_id, row.created_at, row.updated_at];
+        case 'qa_pairs': return [row.id, row.session_id, row.question, row.answer, row.order_index, row.tenant_id];
+        case 'documents': return [row.id, row.session_id, row.filename, row.file_path, row.coordinator_note, row.tenant_id, row.uploaded_at];
+        case 'summaries': return [row.id, row.session_id, row.chief_complaint, row.history_of_presenting_illness, row.key_findings, row.clinical_flags, row.assessment_notes, row.tenant_id, row.generated_at, row.edited_by_coordinator ? true : false];
+        case 'templates': return [row.id, row.name, row.trigger_keywords, row.questions, row.tenant_id, row.created_at];
+        case 'settings': return [row.key, row.value, row.tenant_id || 'default-clinic-id'];
         default: return [];
     }
 }

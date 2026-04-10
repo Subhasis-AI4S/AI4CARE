@@ -72,8 +72,16 @@ const database = {
     // Returns a single row
     get: async (sql, params = []) => {
         if (isPg) {
-            const result = await db.query(convertPlaceholders(sql), params);
-            return result.rows[0];
+            try {
+                const result = await db.query(convertPlaceholders(sql), params);
+                return result.rows[0];
+            } catch (err) {
+                if (err.code === '22P02') { // Invalid text representation (e.g. invalid UUID)
+                    console.warn(`[Database] Query failed due to invalid data type (likely malformed UUID): ${err.message}`);
+                    return null; 
+                }
+                throw err;
+            }
         }
         return new Promise((resolve, reject) => {
             db.get(sql, params, (err, row) => err ? reject(err) : resolve(row));
