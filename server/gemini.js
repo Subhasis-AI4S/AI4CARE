@@ -46,24 +46,38 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     const templates = await db.all("SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = 'default-clinic-id'", [tenantId]);
     const lowerComplaint = (complaint || '').toLowerCase();
     
+    const targetTags = {
+        'en': ['(EN)', '-EN', ' EN'],
+        'bn': ['(BN)', '-BN', ' BN'],
+        'hi': ['(HI)', '-HI', ' HI']
+    };
+
+    const requestedLangTag = targetTags[language.toLowerCase()];
+    const otherLangTags = Object.keys(targetTags)
+        .filter(l => l !== language.toLowerCase())
+        .flatMap(l => targetTags[l]);
+
     const matchedTemplates = templates.filter(t => {
+        const nameUpper = (t.name || '').toUpperCase();
+        
+        // 1. STRIKE OUT templates that clearly belong to another language
+        if (otherLangTags.some(tag => nameUpper.includes(tag))) return false;
+
+        // 2. Check keyword match
         const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
-        // Normalize complaint: remove punctuation and split into words
         const cleanComplaint = lowerComplaint.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g," ");
         const complaintWords = cleanComplaint.split(/\s+/).filter(w => w.length > 0);
         
         return keywords.some(k => {
-            // Check if the keyword exists as a whole phrase or word in the clean complaint
             const regex = new RegExp(`\\b${k}\\b`, 'i');
             return regex.test(cleanComplaint) || k === lowerComplaint.trim();
         });
     });
 
-    // Prioritize template matching the selected language code in its name (e.g. "(BN)", "-HI")
+    // 3. From remaining matched templates, prefer the one with the exact language tag if it exists
     const matchedTemplate = matchedTemplates.find(t => {
-        const name = (t.name || '').toUpperCase();
-        const langCode = (language || 'en').toUpperCase();
-        return name.includes(`(${langCode})`) || name.includes(`-${langCode}`) || name.includes(` ${langCode}`);
+        const nameUpper = (t.name || '').toUpperCase();
+        return requestedLangTag.some(tag => nameUpper.includes(tag));
     }) || matchedTemplates[0];
 
     if (matchedTemplate) {
