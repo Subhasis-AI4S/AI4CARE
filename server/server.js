@@ -110,7 +110,8 @@ app.get('/api/sessions', authenticateToken, async (req, res) => {
 });
 
 app.get('/api/sessions/:id', authenticateToken, async (req, res) => {
-    const sessionId = req.params.id;
+    const sessionId = parseInt(req.params.id);
+    if (isNaN(sessionId)) return res.status(400).json({ error: 'Invalid session ID' });
     const data = {};
 
     try {
@@ -134,7 +135,8 @@ app.get('/api/sessions/:id', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/sessions', authenticateToken, async (req, res) => {
-    const { patient_id, complaint } = req.body;
+    let { patient_id, complaint } = req.body;
+    patient_id = parseInt(patient_id);
     try {
         const result = await db.run("INSERT INTO sessions (patient_id, complaint, status, tenant_id) VALUES (?, ?, 'in_progress', ?)", [patient_id, complaint, req.tenantId]);
         res.json({ id: result.lastID, patient_id, complaint, status: 'in_progress', tenant_id: req.tenantId });
@@ -145,7 +147,8 @@ app.post('/api/sessions', authenticateToken, async (req, res) => {
 
 app.put('/api/sessions/:id', authenticateToken, async (req, res) => {
     const { complaint, status } = req.body;
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid session ID' });
 
     let query = "UPDATE sessions SET ";
     const params = [];
@@ -177,7 +180,8 @@ app.put('/api/sessions/:id', authenticateToken, async (req, res) => {
 });
 
 app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
-    const sessionId = req.params.id;
+    const sessionId = parseInt(req.params.id);
+    if (isNaN(sessionId)) return res.status(400).json({ error: 'Invalid session ID' });
 
     try {
         await db.run('BEGIN TRANSACTION');
@@ -216,7 +220,7 @@ app.put('/api/sessions/:id/status', authenticateToken, async (req, res) => {
 
 // QA Pairs API
 app.post('/api/sessions/:id/qa', authenticateToken, async (req, res) => {
-    const sessionId = req.params.id;
+    const sessionId = parseInt(req.params.id);
     const { question, answer, order_index } = req.body;
 
     try {
@@ -232,7 +236,7 @@ app.post('/api/sessions/:id/qa', authenticateToken, async (req, res) => {
 
 // Summary API
 app.post('/api/sessions/:id/summary', authenticateToken, async (req, res) => {
-    const sessionId = req.params.id;
+    const sessionId = parseInt(req.params.id);
     const {
         chief_complaint,
         history_of_presenting_illness,
