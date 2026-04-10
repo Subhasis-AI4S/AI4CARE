@@ -65,16 +65,20 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
             let rawQs = matchedTemplate.questions || '[]';
             let questions = [];
 
-            // Case 1: Already a JSON string (Array)
-            if (rawQs.trim().startsWith('[') || rawQs.trim().startsWith('{')) {
+            // Case 1: Already an object/array (some DB drivers auto-parse JSON)
+            if (typeof rawQs !== 'string') {
+                questions = Array.isArray(rawQs) ? rawQs : [rawQs];
+            }
+            // Case 2: JSON string
+            else if (rawQs.trim().startsWith('[') || rawQs.trim().startsWith('{')) {
                 try {
                     questions = JSON.parse(rawQs);
                 } catch (e) {
-                    // Case 2: Malformed JSON, but contains content
+                    // Case 3: Malformed JSON, but contains content
                     questions = [rawQs]; 
                 }
             } else {
-                // Case 3: Raw string (newline or comma separated fallback)
+                // Case 4: Raw string (newline or comma separated fallback)
                 questions = rawQs.split('\n').filter(q => q.trim().length > 0);
             }
 

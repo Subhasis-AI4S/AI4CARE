@@ -148,8 +148,7 @@ app.post('/api/sessions', authenticateToken, async (req, res) => {
 
 app.put('/api/sessions/:id', authenticateToken, async (req, res) => {
     const { complaint, status } = req.body;
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ error: 'Invalid session ID' });
+    const id = req.params.id;
 
     let query = "UPDATE sessions SET ";
     const params = [];
@@ -167,7 +166,7 @@ app.put('/api/sessions/:id', authenticateToken, async (req, res) => {
 
     if (sets.length === 0) return res.status(400).json({ error: "No fields to update" });
 
-    query += sets.join(", ") + ", updated_at = CURRENT_TIMESTAMP WHERE id = ? AND tenant_id = ?";
+    query += sets.join(", ") + ", updated_at = CURRENT_TIMESTAMP WHERE id::text = ? AND tenant_id::text = ?";
     params.push(id);
     params.push(req.tenantId);
 
@@ -181,8 +180,7 @@ app.put('/api/sessions/:id', authenticateToken, async (req, res) => {
 });
 
 app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
-    const sessionId = parseInt(req.params.id);
-    if (isNaN(sessionId)) return res.status(400).json({ error: 'Invalid session ID' });
+    const sessionId = req.params.id;
 
     try {
         await db.transaction(async (tx) => {
@@ -209,8 +207,9 @@ app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
 
 app.put('/api/sessions/:id/status', authenticateToken, async (req, res) => {
     const { status } = req.body;
+    const { id } = req.params;
     try {
-        const result = await db.run('UPDATE sessions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND tenant_id = ?', [status, req.params.id, req.tenantId]);
+        const result = await db.run('UPDATE sessions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id::text = ? AND tenant_id::text = ?', [status, id, req.tenantId]);
         if (result.changes === 0) return res.status(404).json({ error: 'Session not found or unauthorized' });
         res.json({ success: true });
     } catch (err) {
@@ -220,11 +219,11 @@ app.put('/api/sessions/:id/status', authenticateToken, async (req, res) => {
 
 // QA Pairs API
 app.post('/api/sessions/:id/qa', authenticateToken, async (req, res) => {
-    const sessionId = parseInt(req.params.id);
+    const sessionId = req.params.id;
     const { question, answer, order_index } = req.body;
 
     try {
-        const session = await db.get('SELECT id FROM sessions WHERE id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+        const session = await db.get('SELECT id FROM sessions WHERE id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
         if (!session) return res.status(403).json({ error: 'Unauthorized session access' });
 
         const result = await db.run('INSERT INTO qa_pairs (session_id, question, answer, order_index, tenant_id) VALUES (?, ?, ?, ?, ?)', [sessionId, question, answer, order_index, req.tenantId]);
