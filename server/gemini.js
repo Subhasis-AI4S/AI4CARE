@@ -47,8 +47,16 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     const lowerComplaint = (complaint || '').toLowerCase();
     
     const matchedTemplate = templates.find(t => {
-        const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase());
-        return keywords.some(k => k && lowerComplaint.includes(k));
+        const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
+        // Normalize complaint: remove punctuation and split into words
+        const complaintWords = lowerComplaint.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").split(/\s+/);
+        
+        return keywords.some(k => {
+            // Direct inclusion (e.g. "my fever is high" contains "fever")
+            if (lowerComplaint.includes(k)) return true;
+            // Word-level match for short keywords
+            return complaintWords.some(word => word === k);
+        });
     });
 
     if (matchedTemplate) {

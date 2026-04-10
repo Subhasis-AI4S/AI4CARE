@@ -184,26 +184,25 @@ app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
     if (isNaN(sessionId)) return res.status(400).json({ error: 'Invalid session ID' });
 
     try {
-        await db.run('BEGIN TRANSACTION');
+        await db.transaction(async (tx) => {
+            // Check session exists and belongs to tenant
+            const session = await tx.get('SELECT id FROM sessions WHERE id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+            if (!session) throw new Error('Session not found or unauthorized');
 
-        // Delete associated records first (ensure tenant isolation)
-        await db.run('DELETE FROM qa_pairs WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
-        await db.run('DELETE FROM documents WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
-        await db.run('DELETE FROM summaries WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+            // Delete associated records
+            await tx.run('DELETE FROM qa_pairs WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+            await tx.run('DELETE FROM documents WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+            await tx.run('DELETE FROM summaries WHERE session_id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+            
+            // Delete the session itself
+            const result = await tx.run('DELETE FROM sessions WHERE id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
+            if (result.changes === 0) throw new Error('Failed to delete session record');
+        });
 
-        // Delete the session itself
-        const result = await db.run('DELETE FROM sessions WHERE id = ? AND tenant_id = ?', [sessionId, req.tenantId]);
-
-        if (result.changes === 0) {
-            await db.run('ROLLBACK');
-            return res.status(404).json({ error: 'Session not found or unauthorized' });
-        }
-
-        await db.run('COMMIT');
         res.json({ success: true, message: "Session and all associated data deleted successfully" });
     } catch (err) {
-        try { await db.run('ROLLBACK'); } catch (e) { }
-        res.status(500).json({ error: err.message });
+        console.error('Session delete failed:', err);
+        res.status(err.message.includes('not found') ? 404 : 500).json({ error: err.message });
     }
 });
 
