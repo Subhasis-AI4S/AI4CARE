@@ -5,16 +5,20 @@ const { connection } = require('../utils/queue');
 
 const processSummary = async (data) => {
     const { sessionId, tenantId, language } = data;
-    console.log(`Processing AI Summary for session ${sessionId}, tenant ${tenantId}`);
+    const sid = parseInt(sessionId);
+    if (isNaN(sid)) {
+        console.error(`[AI Worker] Invalid session ID received: ${sessionId}`);
+        throw new Error(`Invalid session ID: ${sessionId}`);
+    }
 
     try {
         // 1. Fetch data for summary
-        const patientSession = await db.get('SELECT s.*, p.name, p.age, p.gender FROM sessions s JOIN patients p ON s.patient_id = p.id WHERE s.id = ? AND s.tenant_id = ?', [sessionId, tenantId]);
+        const patientSession = await db.get('SELECT s.*, p.name, p.age, p.gender FROM sessions s JOIN patients p ON s.patient_id = p.id WHERE s.id = ? AND s.tenant_id = ?', [sid, tenantId]);
         if (!patientSession) throw new Error('Session not found');
 
         const [qas, docs] = await Promise.all([
-            db.all('SELECT * FROM qa_pairs WHERE session_id = ? AND tenant_id = ? ORDER BY order_index ASC', [sessionId, tenantId]),
-            db.all('SELECT * FROM documents WHERE session_id = ? AND tenant_id = ?', [sessionId, tenantId])
+            db.all('SELECT * FROM qa_pairs WHERE session_id = ? AND tenant_id = ? ORDER BY order_index ASC', [sid, tenantId]),
+            db.all('SELECT * FROM documents WHERE session_id = ? AND tenant_id = ?', [sid, tenantId])
         ]);
 
         // 2. Generate summary using Gemini

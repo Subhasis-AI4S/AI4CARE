@@ -53,15 +53,32 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
 
     if (matchedTemplate) {
         try {
-            console.log(`[Templates] Perfect match found: ${matchedTemplate.name}. Bypassing AI generation.`);
-            const questions = JSON.parse(matchedTemplate.questions || '[]');
-            // Return in the expected format: [{ text: "...", source: "Template" }]
+            console.log(`[Templates] Match found: ${matchedTemplate.name}. Parsing questions...`);
+            let rawQs = matchedTemplate.questions || '[]';
+            let questions = [];
+
+            // Case 1: Already a JSON string (Array)
+            if (rawQs.trim().startsWith('[') || rawQs.trim().startsWith('{')) {
+                try {
+                    questions = JSON.parse(rawQs);
+                } catch (e) {
+                    // Case 2: Malformed JSON, but contains content
+                    questions = [rawQs]; 
+                }
+            } else {
+                // Case 3: Raw string (newline or comma separated fallback)
+                questions = rawQs.split('\n').filter(q => q.trim().length > 0);
+            }
+
+            if (!Array.isArray(questions)) questions = [questions];
+
             return questions.map(q => {
                 const text = typeof q === 'string' ? q : (q[language] || q.en || q.hi || q.bn || 'Untitled Question');
                 return { text, source: 'Template' };
             });
         } catch (e) {
-            console.error("[Templates] Failed to parse template questions:", e);
+            console.error("[Templates] Critical failure parsing template:", e);
+            // Don't crash the whole request, fall back to AI
         }
     }
 
