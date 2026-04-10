@@ -82,8 +82,10 @@ export const SessionHistory = () => {
     };
 
     const filteredSessions = sessions.filter(s => {
-        const matchesSearch = s.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              s.complaint.toLowerCase().includes(searchTerm.toLowerCase());
+        const nameMatch = (s.patient_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const complaintMatch = (s.complaint || s.summary_complaint || '').toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesSearch = nameMatch || complaintMatch;
         const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
         return matchesSearch && matchesStatus;
     });

@@ -5,10 +5,9 @@ const { connection } = require('../utils/queue');
 
 const processSummary = async (data) => {
     const { sessionId, tenantId, language } = data;
-    const sid = parseInt(sessionId);
-    if (isNaN(sid)) {
-        console.error(`[AI Worker] Invalid session ID received: ${sessionId}`);
-        throw new Error(`Invalid session ID: ${sessionId}`);
+    if (!sessionId) {
+        console.error(`[AI Worker] No session ID received`);
+        throw new Error(`Session ID missing`);
     }
 
     try {
@@ -24,13 +23,13 @@ const processSummary = async (data) => {
         // 2. Generate summary using Gemini
         const summary = await gemini.generateSummary(patientSession, patientSession.complaint, qas, docs, language || 'en', tenantId);
 
-        // 3. Save summary to DB (Handle serializing complex objects)
-        const checkExisting = await db.get('SELECT id FROM summaries WHERE session_id = ? AND tenant_id = ?', [sessionId, tenantId]);
+        // 3. Save summary to DB with type-agnostic casting
+        const checkExisting = await db.get('SELECT id FROM summaries WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, tenantId]);
         
         if (checkExisting) {
             await db.run(`UPDATE summaries SET 
                 chief_complaint = ?, history_of_presenting_illness = ?, key_findings = ?, clinical_flags = ?, assessment_notes = ?, suggested_medications = ?, suggested_tests = ?, updated_at = CURRENT_TIMESTAMP 
-                WHERE session_id = ? AND tenant_id = ?`, 
+                WHERE session_id::text = ? AND tenant_id::text = ?`, 
                 [summary.chief_complaint, summary.history_of_presenting_illness, JSON.stringify(summary.key_findings), JSON.stringify(summary.clinical_flags), summary.assessment_notes, summary.suggested_medications, summary.suggested_tests, sessionId, tenantId]);
         } else {
             await db.run('INSERT INTO summaries (session_id, chief_complaint, history_of_presenting_illness, key_findings, clinical_flags, assessment_notes, suggested_medications, suggested_tests, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
@@ -38,7 +37,7 @@ const processSummary = async (data) => {
         }
 
         // 4. Update session status to completed
-        await db.run('UPDATE sessions SET status = "completed", updated_at = CURRENT_TIMESTAMP WHERE id = ? AND tenant_id = ?', [sessionId, tenantId]);
+        await db.run("UPDATE sessions SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE id::text = ? AND tenant_id::text = ?", [sessionId, tenantId]);
         
         console.log(`Successfully completed AI summary for session ${sessionId}`);
     } catch (err) {

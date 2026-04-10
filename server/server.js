@@ -454,13 +454,19 @@ app.post('/api/gemini/summary', authenticateToken, async (req, res) => {
         const { sessionId, language } = req.body;
         if (!sessionId) return res.status(400).json({ error: 'Session ID is required' });
 
-        // 1. Mark session as processing
-        await db.run("UPDATE sessions SET status = 'processing', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND tenant_id = ?", [sessionId, req.tenantId]);
+        // 1. Mark session as processing with type-agnostic casting
+        await db.run("UPDATE sessions SET status = 'processing', updated_at = CURRENT_TIMESTAMP WHERE id::text = ? AND tenant_id::text = ?", [sessionId, req.tenantId]);
 
         // 2. Add job to queue
         await addSummaryJob(sessionId, req.tenantId, language || 'en');
 
-        res.json({ success: true, message: 'AI summary generation started in background' });
+        // Return a dummy summary structure so the frontend doesn't crash if it expects one, 
+        // but mark it as pending so it knows to poll.
+        res.json({ 
+            success: true, 
+            message: 'AI summary generation started in background',
+            summary: { status: 'pending', session_id: sessionId }
+        });
     } catch (error) {
         console.error('Error initiating summary:', error);
         res.status(500).json({ error: error.message || 'Failed to initiate summary' });
