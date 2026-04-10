@@ -256,9 +256,18 @@ SUMMARY CONTENT MUST BE IN ENGLISH for medical records. Use high-level clinical 
         });
         
         const result = await model.generateContent(systemPrompt);
-        const response = await result.response;
         const text = response.text().trim();
         const summary = JSON.parse(text);
+        
+        // Ensure non-blank fields using local data as fallback
+        if (!summary.chief_complaint) summary.chief_complaint = complaint;
+        if (!summary.history_of_presenting_illness) {
+            summary.history_of_presenting_illness = `Patient presents with ${complaint}. ${qaPairs.length > 0 ? "Follow-up notes: " + qaPairs.map(qa => `${qa.question}: ${qa.answer}`).join('; ') : ""}`;
+        }
+        if (!summary.key_findings || summary.key_findings.length === 0) {
+            summary.key_findings = documents.length > 0 ? documents.map(d => d.coordinator_note) : ["Routine consult"];
+        }
+
         console.log("Successfully generated AI summary.");
         return summary;
     } catch (e) {
@@ -290,14 +299,10 @@ Write a very brief, professional one-sentence clinical note in English summarizi
     
      try {
          console.log(`--- Gemini Document Note Generation for: ${filename} ---`);
-         const response = await ai.models.generateContent({
-             model: "gemini-2.0-flash",
-             contents: systemPrompt,
-             config: {
-                 safetySettings: safetySettings
-             }
-         });
-         const note = (response.text || (response.outputs && response.outputs[0]?.text) || description).trim();
+         const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+         const result = await model.generateContent(systemPrompt);
+         const response = await result.response;
+         const note = response.text().trim();
          console.log("Successfully generated document note.");
          return note;
      } catch (e) {
