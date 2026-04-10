@@ -123,9 +123,12 @@ export const TemplatesManager = () => {
                                         <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">{tmpl.trigger_keywords || 'No keywords'}</p>
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{t('templates_flow.questions')} ({qs.length})</p>
                                         <ul className="text-sm text-slate-600 dark:text-slate-300 space-y-1 pl-4 list-disc line-clamp-3">
-                                            {qs.slice(0, 3).map((q: string, i: number) => <li key={i}>{q}</li>)}
+                                            {qs.slice(0, 3).map((q: any, i: number) => (
+                                                <li key={i}>
+                                                    {typeof q === 'string' ? q : (q.en || q.hi || q.bn || 'Untitled Question')}
+                                                </li>
+                                            ))}
                                             {qs.length > 3 && <li className="text-slate-400 list-none text-xs mt-1">+{qs.length - 3} more</li>}
                                         </ul>
                                     </div>
