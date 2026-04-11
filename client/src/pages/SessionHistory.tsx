@@ -86,7 +86,13 @@ export const SessionHistory = () => {
         const complaintMatch = (s.complaint || s.summary_complaint || '').toLowerCase().includes(searchTerm.toLowerCase());
         
         const matchesSearch = nameMatch || complaintMatch;
-        const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
+        let matchesStatus = statusFilter === 'all' || s.status === statusFilter;
+        
+        // Group 'processing' with 'in_progress' for the filter
+        if (statusFilter === 'in_progress' && s.status === 'processing') {
+            matchesStatus = true;
+        }
+        
         return matchesSearch && matchesStatus;
     });
 

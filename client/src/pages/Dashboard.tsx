@@ -62,7 +62,7 @@ export const Dashboard = () => {
         return {
             totalToday: todaySessions.length,
             completed: sessions.filter((s: any) => s.status === 'completed').length,
-            pending: sessions.filter((s: any) => s.status === 'in_progress').length,
+            pending: sessions.filter((s: any) => s.status === 'in_progress' || s.status === 'processing').length,
             flagged: sessions.filter((s: any) => s.status === 'flagged').length,
         };
     }, [sessions]);
@@ -82,7 +82,7 @@ export const Dashboard = () => {
 
     const distributionData = useMemo(() => {
         const completed = sessions.filter((s: any) => s.status === 'completed').length;
-        const pending = sessions.filter((s: any) => s.status === 'in_progress').length;
+        const pending = sessions.filter((s: any) => s.status === 'in_progress' || s.status === 'processing').length;
         const flagged = sessions.filter((s: any) => s.status === 'flagged').length;
         
         return [
@@ -283,6 +283,8 @@ export const StatusBadge = ({ status }: { status: string }) => {
             return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"><CheckCircle className="w-3 h-3 mr-1" /> {t('dashboard_flow.status_completed')}</span>;
         case 'flagged':
             return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400"><AlertTriangle className="w-3 h-3 mr-1" /> {t('dashboard_flow.status_flagged')}</span>;
+        case 'processing':
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400"><Clock className="w-3 h-3 mr-1 animate-pulse" /> AI Processing...</span>;
         default:
             return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"><Clock className="w-3 h-3 mr-1" /> {t('dashboard_flow.status_in_progress')}</span>;
     }
