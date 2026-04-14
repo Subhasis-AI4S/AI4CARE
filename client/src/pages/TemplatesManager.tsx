@@ -155,10 +155,14 @@ const TemplateModal = ({ template, onClose, onSave }: any) => {
     const { logout } = useAppContext();
     const [name, setName] = useState(template.name || '');
     const [keywords, setKeywords] = useState(template.trigger_keywords || '');
-    const [questions, setQuestions] = useState<string[]>(template.questions || ['']);
+    const [questions, setQuestions] = useState<any[]>(template.questions || ['']);
 
     const handleSave = async () => {
-        const body = { name, trigger_keywords: keywords, questions: questions.filter(q => q.trim()) };
+        const body = { 
+            name, 
+            trigger_keywords: keywords, 
+            questions: questions.filter(q => typeof q === 'string' ? q.trim() : true) 
+        };
         const method = template.id ? 'PUT' : 'POST';
         const url = `/api/templates${template.id ? `/${template.id}` : ''}`;
         
@@ -198,10 +202,18 @@ const TemplateModal = ({ template, onClose, onSave }: any) => {
                                 <div key={i} className="flex items-center gap-2">
                                     <span className="text-slate-400 text-sm w-4">{i + 1}.</span>
                                     <input 
-                                        value={q} 
+                                        value={typeof q === 'string' ? q : (q.en || q.hi || q.bn || '')} 
                                         onChange={e => {
+                                            const newText = e.target.value;
                                             const newQs = [...questions];
-                                            newQs[i] = e.target.value;
+                                            if (typeof q === 'string') {
+                                                newQs[i] = newText;
+                                            } else {
+                                                // Update English if it exists, otherwise update the first available key, 
+                                                // or just 'en' if the object is empty for some reason.
+                                                const keyToUpdate = q.en !== undefined ? 'en' : (Object.keys(q)[0] || 'en');
+                                                newQs[i] = { ...q, [keyToUpdate]: newText };
+                                            }
                                             setQuestions(newQs);
                                         }} 
                                         type="text" 
