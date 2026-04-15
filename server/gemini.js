@@ -77,8 +77,8 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         .filter(l => l !== language.toLowerCase())
         .flatMap(l => targetTags[l]);
 
-    // 1. Gather Matching Templates
     let templateQuestions = [];
+    console.log(`[Gemini] Found ${templates.length} templates for tenant. Matching against: "${lowerComplaint}"`);
     const matchedTemplates = templates.filter(t => {
         const nameUpper = (t.name || '').toUpperCase();
         if (otherLangTags.some(tag => nameUpper.includes(tag))) return false;
@@ -91,6 +91,8 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
             return regex.test(cleanComplaint) || k === lowerComplaint.trim();
         });
     });
+
+    console.log(`[Gemini] Matched ${matchedTemplates.length} templates: ${matchedTemplates.map(t => t.name).join(', ')}`);
 
     const matchedTemplate = matchedTemplates.find(t => {
         const nameUpper = (t.name || '').toUpperCase();
@@ -117,11 +119,19 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     // 2. Fall back to Gemini for enrichment or full generation
     const apiKey = await getApiKey(tenantId);
     if (!apiKey) {
-        // No AI available -> Use templates if they exist, otherwise generic fallback
-        if (templateQuestions.length > 0) {
-            return templateQuestions.map(q => ({ text: q, source: 'Template' }));
+        // Blended Fallback: Use templates plus generic filler to reach at least 6 questions
+        let finalQs = templateQuestions.map(q => ({ text: q, source: 'Template' }));
+        if (finalQs.length < 5) {
+            const extra = (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic' }));
+            // Filter out exact duplicates if any
+            const existingTexts = new Set(finalQs.map(f => f.text.toLowerCase()));
+            for (const ex of extra) {
+                if (!existingTexts.has(ex.text.toLowerCase()) && finalQs.length < 6) {
+                    finalQs.push(ex);
+                }
+            }
         }
-        return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
+        return finalQs;
     }
 
     const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
