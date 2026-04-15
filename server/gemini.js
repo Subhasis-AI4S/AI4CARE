@@ -34,8 +34,8 @@ const safetySettings = [
 const getTemplatesContext = async (complaint, tenantId) => {
     try {
         const query = db.isPg 
-            ? 'SELECT * FROM templates WHERE tenant_id::text = ? OR tenant_id::text = "default-clinic-id"'
-            : 'SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = "default-clinic-id"';
+            ? "SELECT * FROM templates WHERE tenant_id::text = ? OR tenant_id::text = 'default-clinic-id'"
+            : "SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = 'default-clinic-id'";
         const templates = await db.all(query, [tenantId]);
         if (!templates || templates.length === 0) return '';
         
@@ -144,12 +144,13 @@ STRICT GUIDELINES:
 6. No diagnosis. Be empathetic and professional.
 7. Return ONLY a JSON array of strings. No markdown. No jokes.`;
 
+    let rawText = '';
     try {
         console.log(`--- Gemini AI Question Generation Started for: ${complaint} ---`);
         const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(systemPrompt);
         const response = await result.response;
-        let rawText = response.text().trim();
+        rawText = response.text().trim();
         
         // Robust JSON Extraction
         let jsonText = rawText;
@@ -163,7 +164,7 @@ STRICT GUIDELINES:
         return finalQuestions;
     } catch (e) {
         console.error("[Gemini] API error or parsing failed:", e.message);
-        console.error("[Gemini] Raw AI Response was:", rawText || 'EMPTY');
+        if (rawText) console.error("[Gemini] Raw AI Response was:", rawText);
         const fallbacks = (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
         return fallbacks;
     }
