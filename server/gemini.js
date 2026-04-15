@@ -57,16 +57,14 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         .filter(l => l !== language.toLowerCase())
         .flatMap(l => targetTags[l]);
 
+    // 1. Gather Matching Templates
+    let templateQuestions = [];
     const matchedTemplates = templates.filter(t => {
         const nameUpper = (t.name || '').toUpperCase();
-        
-        // 1. STRIKE OUT templates that clearly belong to another language
         if (otherLangTags.some(tag => nameUpper.includes(tag))) return false;
-
-        // 2. Check keyword match
+        
         const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
         const cleanComplaint = lowerComplaint.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g," ");
-        const complaintWords = cleanComplaint.split(/\s+/).filter(w => w.length > 0);
         
         return keywords.some(k => {
             const regex = new RegExp(`\\b${k}\\b`, 'i');
@@ -74,7 +72,6 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         });
     });
 
-    // 3. From remaining matched templates, prefer the one with the exact language tag if it exists
     const matchedTemplate = matchedTemplates.find(t => {
         const nameUpper = (t.name || '').toUpperCase();
         return requestedLangTag.some(tag => nameUpper.includes(tag));
@@ -82,57 +79,50 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
 
     if (matchedTemplate) {
         try {
-            console.log(`[Templates] Match found: ${matchedTemplate.name}. Parsing questions...`);
+            console.log(`[Templates] Match found for enrichment: ${matchedTemplate.name}`);
             let rawQs = matchedTemplate.questions || '[]';
-            let questions = [];
-
-            // Case 1: Already an object/array (some DB drivers auto-parse JSON)
-            if (typeof rawQs !== 'string') {
-                questions = Array.isArray(rawQs) ? rawQs : [rawQs];
-            }
-            // Case 2: JSON string
-            else if (rawQs.trim().startsWith('[') || rawQs.trim().startsWith('{')) {
-                try {
-                    questions = JSON.parse(rawQs);
-                } catch (e) {
-                    // Case 3: Malformed JSON, but contains content
-                    questions = [rawQs]; 
-                }
-            } else {
-                // Case 4: Raw string (newline or comma separated fallback)
-                questions = rawQs.split('\n').filter(q => q.trim().length > 0);
-            }
-
-            if (!Array.isArray(questions)) questions = [questions];
-
-            return questions.map(q => {
-                const text = typeof q === 'string' ? q : (q[language] || q.en || q.hi || q.bn || 'Untitled Question');
-                return { text, source: 'Template' };
-            });
+            let parsedQs = [];
+            if (typeof rawQs !== 'string') parsedQs = Array.isArray(rawQs) ? rawQs : [rawQs];
+            else if (rawQs.trim().startsWith('[') || rawQs.trim().startsWith('{')) parsedQs = JSON.parse(rawQs);
+            else parsedQs = rawQs.split('\n').filter(q => q.trim().length > 0);
+            
+            templateQuestions = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => 
+                typeof q === 'string' ? q : (q[language] || q.en || q.hi || q.bn || '')
+            ).filter(q => q.trim().length > 0);
         } catch (e) {
-            console.error("[Templates] Critical failure parsing template:", e);
-            // Don't crash the whole request, fall back to AI
+            console.error("[Templates] Failure parsing template context:", e);
         }
     }
 
-    // 2. Fall back to Gemini if no template matches
+    // 2. Fall back to Gemini for enrichment or full generation
     const apiKey = await getApiKey(tenantId);
     if (!apiKey) {
+        // No AI available -> Use templates if they exist, otherwise generic fallback
+        if (templateQuestions.length > 0) {
+            return templateQuestions.map(q => ({ text: q, source: 'Template' }));
+        }
         return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
     }
 
     const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
     const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
 
+    const templateContext = templateQuestions.length > 0 
+        ? `\nCLINICAL CONTEXT (INCLUDE THESE QUESTIONS): \n${templateQuestions.map((q, i) => `${i+1}. ${q}`).join('\n')}` 
+        : '';
+
     const systemPrompt = `You are a Clinical Intake Assistant. Help a physician collect a focused medical history.
 Patient Complaint: ${complaint}
+${templateContext}
 
 STRICT GUIDELINES:
-1. Generate 5-8 professional, medically-relevant follow-up questions tailored to the complaint.
-2. Respond ONLY in ${targetLang} (${language}) native script.
-3. Use clinical frameworks like SOCRATES/OPQRST.
-4. No diagnosis. Be empathetic and professional.
-5. Return ONLY a JSON array of strings. No markdown. No jokes.`;
+1. Generate a total of 5-8 professional, medically-relevant follow-up questions.
+2. If CLINICAL CONTEXT questions are provided above, INCLUDE THEM and add more to reach the 5-8 count.
+3. Respond ONLY in ${targetLang} (${language}) native script.
+4. Use clinical frameworks like SOCRATES/OPQRST (Site, Onset, Character, Radiation, Associations, Time, Exacerbating/Relieving factors, Severity).
+5. Ensure questions are high-yield and logically ordered.
+6. No diagnosis. Be empathetic and professional.
+7. Return ONLY a JSON array of strings. No markdown. No jokes.`;
 
     try {
         console.log(`--- Gemini AI Question Generation Started for: ${complaint} ---`);
