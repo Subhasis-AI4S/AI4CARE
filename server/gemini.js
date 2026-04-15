@@ -77,25 +77,25 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         .filter(l => l !== language.toLowerCase())
         .flatMap(l => targetTags[l]);
 
-    // Match Templates
+    // Match Templates with Fuzzy Support for missing spaces
     let matchedTemplates = templates.filter(t => {
         const nameUpper = (t.name || '').toUpperCase();
         if (otherLangTags.some(tag => nameUpper.includes(tag))) return false;
         
         const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
-        const cleanComplaint = lowerComplaint.replace(/[.,/#!$%^&*;:{}=\-_`~()]/g," ");
+        const cleanComplaint = lowerComplaint.replace(/\s+/g, ""); // No spaces
         
         return keywords.some(k => {
-            const regex = new RegExp(`\\b${k}\\b`, 'i');
-            return regex.test(cleanComplaint) || k === lowerComplaint.trim();
+            const cleanK = k.replace(/\s+/g, "");
+            return cleanComplaint.includes(cleanK) || cleanK.includes(cleanComplaint);
         });
     });
 
-    // Prioritization: Sort matches (exact name match first, then keyword matches)
+    // Prioritization: Sort matches (longer keyword match first or exact name match)
     matchedTemplates.sort((a, b) => {
-        const aMatch = a.name.toLowerCase().includes(lowerComplaint) ? 1 : 0;
-        const bMatch = b.name.toLowerCase().includes(lowerComplaint) ? 1 : 0;
-        return bMatch - aMatch;
+        const aExact = a.name.toLowerCase() === lowerComplaint ? 1 : 0;
+        const bExact = b.name.toLowerCase() === lowerComplaint ? 1 : 0;
+        return bExact - aExact;
     });
 
     console.log(`[Gemini] Matched ${matchedTemplates.length} templates: ${matchedTemplates.map(t => t.name).join(', ')}`);
@@ -131,12 +131,19 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     // 2. Fall back to Gemini for enrichment or full generation
     const apiKey = await getApiKey(tenantId);
     if (!apiKey) {
-        if (templateQuestions.length > 0) {
-            console.log(`[Gemini] No API Key. Returning ${templateQuestions.length} template-only questions.`);
-            return templateQuestions.map(q => ({ text: q, source: 'Template' }));
+        let finalQs = templateQuestions.map(q => ({ text: q, source: 'Template' }));
+        // Floor of 6: If templates don't provide enough questions, fill with generic ones
+        if (finalQs.length < 5) {
+            const extra = (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic' }));
+            const existingTexts = new Set(finalQs.map(f => f.text.toLowerCase()));
+            for (const ex of extra) {
+                if (!existingTexts.has(ex.text.toLowerCase()) && finalQs.length < 6) {
+                    finalQs.push(ex);
+                }
+            }
         }
-        console.log(`[Gemini] No API Key and no template match. Returning 6 generic fallbacks.`);
-        return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic' }));
+        console.log(`[Gemini] No API Key. Returning ${finalQs.length} questions (Templates matched: ${templateQuestions.length}).`);
+        return finalQs;
     }
 
     const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
