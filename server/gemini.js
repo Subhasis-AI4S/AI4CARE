@@ -77,9 +77,8 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         .filter(l => l !== language.toLowerCase())
         .flatMap(l => targetTags[l]);
 
-    let templateQuestions = [];
-    console.log(`[Gemini] Found ${templates.length} templates for tenant. Matching against: "${lowerComplaint}"`);
-    const matchedTemplates = templates.filter(t => {
+    // Match Templates
+    let matchedTemplates = templates.filter(t => {
         const nameUpper = (t.name || '').toUpperCase();
         if (otherLangTags.some(tag => nameUpper.includes(tag))) return false;
         
@@ -92,29 +91,42 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         });
     });
 
+    // Prioritization: Sort matches (exact name match first, then keyword matches)
+    matchedTemplates.sort((a, b) => {
+        const aMatch = a.name.toLowerCase().includes(lowerComplaint) ? 1 : 0;
+        const bMatch = b.name.toLowerCase().includes(lowerComplaint) ? 1 : 0;
+        return bMatch - aMatch;
+    });
+
     console.log(`[Gemini] Matched ${matchedTemplates.length} templates: ${matchedTemplates.map(t => t.name).join(', ')}`);
 
-    const matchedTemplate = matchedTemplates.find(t => {
-        const nameUpper = (t.name || '').toUpperCase();
-        return requestedLangTag.some(tag => nameUpper.includes(tag));
-    }) || matchedTemplates[0];
+    // COLLECT ALL questions from ALL matched templates (Combine them for more variety)
+    const allQuestions = [];
+    const seenQs = new Set();
 
-    if (matchedTemplate) {
+    for (const t of matchedTemplates) {
         try {
-            console.log(`[Templates] Match found for enrichment: ${matchedTemplate.name}`);
-            let rawQs = matchedTemplate.questions || '[]';
+            let rawQs = t.questions || '[]';
             let parsedQs = [];
             if (typeof rawQs !== 'string') parsedQs = Array.isArray(rawQs) ? rawQs : [rawQs];
             else if (rawQs.trim().startsWith('[') || rawQs.trim().startsWith('{')) parsedQs = JSON.parse(rawQs);
             else parsedQs = rawQs.split('\n').filter(q => q.trim().length > 0);
             
-            templateQuestions = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => 
+            const localizedQs = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => 
                 typeof q === 'string' ? q : (q[language] || q.en || q.hi || q.bn || '')
             ).filter(q => q.trim().length > 0);
+
+            for (const q of localizedQs) {
+                if (!seenQs.has(q.toLowerCase())) {
+                    allQuestions.push(q);
+                    seenQs.add(q.toLowerCase());
+                }
+            }
         } catch (e) {
-            console.error("[Templates] Failure parsing template context:", e);
+            console.error(`[Templates] Failure parsing questions for ${t.name}:`, e);
         }
     }
+    templateQuestions = allQuestions;
 
     // 2. Fall back to Gemini for enrichment or full generation
     const apiKey = await getApiKey(tenantId);
