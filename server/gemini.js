@@ -3,9 +3,23 @@ const db = require('./db/database');
 
 const getApiKey = async (tenantId) => {
     try {
-        const row = await db.get("SELECT value FROM settings WHERE key = 'gemini_api_key' AND (tenant_id = ? OR tenant_id = 'default-clinic-id') ORDER BY tenant_id DESC", [tenantId]);
-        return row ? row.value : '';
+        console.log(`[Gemini] Fetching API key for tenant: ${tenantId}`);
+        // Add ::text casting for PG compatibility and safer comparison
+        const query = db.isPg 
+            ? "SELECT value FROM settings WHERE key = 'gemini_api_key' AND (tenant_id::text = ? OR tenant_id = 'default-clinic-id') ORDER BY CASE WHEN tenant_id::text = ? THEN 1 ELSE 2 END ASC LIMIT 1"
+            : "SELECT value FROM settings WHERE key = 'gemini_api_key' AND (tenant_id = ? OR tenant_id = 'default-clinic-id') ORDER BY tenant_id DESC LIMIT 1";
+        
+        const params = db.isPg ? [tenantId, tenantId] : [tenantId];
+        const row = await db.get(query, params);
+        
+        if (row && row.value) {
+            console.log(`[Gemini] API Key found (length: ${row.value.length})`);
+            return row.value;
+        }
+        console.warn(`[Gemini] No API Key found for tenant ${tenantId}. Fallback to templates/generic.`);
+        return '';
     } catch (err) {
+        console.error("[Gemini] Error fetching API key:", err.message);
         return '';
     }
 };
@@ -125,17 +139,21 @@ STRICT GUIDELINES:
 7. Return ONLY a JSON array of strings. No markdown. No jokes.`;
 
     try {
-        console.log(`--- Gemini AI Question Generation Started for: ${complaint} ---`);
+        console.log(`--- Gemini AI Question Generation Started for: ${complaint} (Source: ${templateQuestions.length > 0 ? 'Enriched Template' : 'Full AI'}) ---`);
         const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(systemPrompt);
         const response = await result.response;
         let text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
         
         const questions = JSON.parse(text);
-        return Array.isArray(questions) ? questions.map(q => ({ text: q, source: 'AI' })) : [];
+        const finalQuestions = Array.isArray(questions) ? questions.map(q => ({ text: q, source: 'AI' })) : [];
+        console.log(`[Gemini] Generated ${finalQuestions.length} questions.`);
+        return finalQuestions;
     } catch (e) {
-        console.error("Gemini API call failed:", e.message);
-        return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
+        console.error("[Gemini] API call or parsing failed:", e.message);
+        const fallbacks = (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
+        console.log(`[Gemini] Returning ${fallbacks.length} generic fallback questions.`);
+        return fallbacks;
     }
 };
 
