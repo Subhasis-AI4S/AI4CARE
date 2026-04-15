@@ -4,19 +4,19 @@ const db = require('./db/database');
 const getApiKey = async (tenantId) => {
     try {
         console.log(`[Gemini] Fetching API key for tenant: ${tenantId}`);
-        // Add ::text casting for PG compatibility and safer comparison
+        // Ensure ALL tenant_id comparisons use ::text in PostgreSQL to avoid UUID/String mismatch
         const query = db.isPg 
-            ? "SELECT value FROM settings WHERE key = 'gemini_api_key' AND (tenant_id::text = ? OR tenant_id = 'default-clinic-id') ORDER BY CASE WHEN tenant_id::text = ? THEN 1 ELSE 2 END ASC LIMIT 1"
+            ? "SELECT value FROM settings WHERE key = 'gemini_api_key' AND (tenant_id::text = ? OR tenant_id::text = 'default-clinic-id') ORDER BY CASE WHEN tenant_id::text = ? THEN 1 ELSE 2 END ASC LIMIT 1"
             : "SELECT value FROM settings WHERE key = 'gemini_api_key' AND (tenant_id = ? OR tenant_id = 'default-clinic-id') ORDER BY tenant_id DESC LIMIT 1";
         
         const params = db.isPg ? [tenantId, tenantId] : [tenantId];
         const row = await db.get(query, params);
         
         if (row && row.value) {
-            console.log(`[Gemini] API Key found (length: ${row.value.length})`);
+            console.log(`[Gemini] API Key found (ends with: ...${row.value.slice(-4)})`);
             return row.value;
         }
-        console.warn(`[Gemini] No API Key found for tenant ${tenantId}. Fallback to templates/generic.`);
+        console.warn(`[Gemini] No API Key found for tenant id: ${tenantId}.`);
         return '';
     } catch (err) {
         console.error("[Gemini] Error fetching API key:", err.message);
@@ -33,7 +33,10 @@ const safetySettings = [
 
 const getTemplatesContext = async (complaint, tenantId) => {
     try {
-        const templates = await db.all('SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = "default-clinic-id"', [tenantId]);
+        const query = db.isPg 
+            ? 'SELECT * FROM templates WHERE tenant_id::text = ? OR tenant_id::text = "default-clinic-id"'
+            : 'SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = "default-clinic-id"';
+        const templates = await db.all(query, [tenantId]);
         if (!templates || templates.length === 0) return '';
         
         const lowerComplaint = complaint.toLowerCase();
@@ -57,7 +60,10 @@ const getTemplatesContext = async (complaint, tenantId) => {
 
 const generateQuestions = async (complaint, language = 'en', tenantId) => {
     // 1. Try local templates FIRST for exact clinical matches
-    const templates = await db.all("SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = 'default-clinic-id'", [tenantId]);
+    const query = db.isPg 
+        ? "SELECT * FROM templates WHERE tenant_id::text = ? OR tenant_id::text = 'default-clinic-id'"
+        : "SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = 'default-clinic-id'";
+    const templates = await db.all(query, [tenantId]);
     const lowerComplaint = (complaint || '').toLowerCase();
     
     const targetTags = {
@@ -139,20 +145,26 @@ STRICT GUIDELINES:
 7. Return ONLY a JSON array of strings. No markdown. No jokes.`;
 
     try {
-        console.log(`--- Gemini AI Question Generation Started for: ${complaint} (Source: ${templateQuestions.length > 0 ? 'Enriched Template' : 'Full AI'}) ---`);
+        console.log(`--- Gemini AI Question Generation Started for: ${complaint} ---`);
         const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(systemPrompt);
         const response = await result.response;
-        let text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+        let rawText = response.text().trim();
         
-        const questions = JSON.parse(text);
+        // Robust JSON Extraction
+        let jsonText = rawText;
+        if (rawText.includes('[')) {
+            jsonText = rawText.substring(rawText.indexOf('['), rawText.lastIndexOf(']') + 1);
+        }
+        
+        const questions = JSON.parse(jsonText);
         const finalQuestions = Array.isArray(questions) ? questions.map(q => ({ text: q, source: 'AI' })) : [];
-        console.log(`[Gemini] Generated ${finalQuestions.length} questions.`);
+        console.log(`[Gemini] Generated ${finalQuestions.length} questions successfully.`);
         return finalQuestions;
     } catch (e) {
-        console.error("[Gemini] API call or parsing failed:", e.message);
+        console.error("[Gemini] API error or parsing failed:", e.message);
+        console.error("[Gemini] Raw AI Response was:", rawText || 'EMPTY');
         const fallbacks = (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
-        console.log(`[Gemini] Returning ${fallbacks.length} generic fallback questions.`);
         return fallbacks;
     }
 };
