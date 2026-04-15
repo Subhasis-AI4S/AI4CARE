@@ -119,19 +119,12 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     // 2. Fall back to Gemini for enrichment or full generation
     const apiKey = await getApiKey(tenantId);
     if (!apiKey) {
-        // Blended Fallback: Use templates plus generic filler to reach at least 6 questions
-        let finalQs = templateQuestions.map(q => ({ text: q, source: 'Template' }));
-        if (finalQs.length < 5) {
-            const extra = (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic' }));
-            // Filter out exact duplicates if any
-            const existingTexts = new Set(finalQs.map(f => f.text.toLowerCase()));
-            for (const ex of extra) {
-                if (!existingTexts.has(ex.text.toLowerCase()) && finalQs.length < 6) {
-                    finalQs.push(ex);
-                }
-            }
+        if (templateQuestions.length > 0) {
+            console.log(`[Gemini] No API Key. Returning ${templateQuestions.length} template-only questions.`);
+            return templateQuestions.map(q => ({ text: q, source: 'Template' }));
         }
-        return finalQs;
+        console.log(`[Gemini] No API Key and no template match. Returning 6 generic fallbacks.`);
+        return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic' }));
     }
 
     const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
