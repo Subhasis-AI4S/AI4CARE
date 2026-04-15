@@ -124,7 +124,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
     }
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+    const ai = new GoogleGenAI(apiKey);
     const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
 
     const templateContext = templateQuestions.length > 0 
@@ -246,7 +246,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
         };
     }
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+    const ai = new GoogleGenAI(apiKey);
     const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
 
     const qaPairsText = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
@@ -277,6 +277,7 @@ SUMMARY CONTENT MUST BE IN ENGLISH for medical records. Use high-level clinical 
         });
         
         const result = await model.generateContent(systemPrompt);
+        const response = await result.response;
         const text = response.text().trim();
         const summary = JSON.parse(text);
         
@@ -311,7 +312,7 @@ const generateDocumentNote = async (filename, description, language = 'en', tena
          return `Attached document: ${filename}. Context: ${description}`;
      }
 
-     const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+     const ai = new GoogleGenAI(apiKey);
      const langNames = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' };
      const contextLang = langNames[language] || 'English';
 
