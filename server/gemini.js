@@ -124,9 +124,8 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
     }
 
-    const ai = new GoogleGenAI(apiKey);
+    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
     const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
-
     const templateContext = templateQuestions.length > 0 
         ? `\nCLINICAL CONTEXT (INCLUDE THESE QUESTIONS): \n${templateQuestions.map((q, i) => `${i+1}. ${q}`).join('\n')}` 
         : '';
@@ -139,34 +138,27 @@ STRICT GUIDELINES:
 1. Generate a total of 5-8 professional, medically-relevant follow-up questions.
 2. If CLINICAL CONTEXT questions are provided above, INCLUDE THEM and add more to reach the 5-8 count.
 3. Respond ONLY in ${targetLang} (${language}) native script.
-4. Use clinical frameworks like SOCRATES/OPQRST (Site, Onset, Character, Radiation, Associations, Time, Exacerbating/Relieving factors, Severity).
-5. Ensure questions are high-yield and logically ordered.
-6. No diagnosis. Be empathetic and professional.
-7. Return ONLY a JSON array of strings. No markdown. No jokes.`;
+4. Use clinical frameworks like SOCRATES/OPQRST.
+5. Return ONLY a JSON array of strings.`;
 
     let rawText = '';
     try {
-        console.log(`--- Gemini AI Question Generation Started for: ${complaint} ---`);
-        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent(systemPrompt);
-        const response = await result.response;
-        rawText = response.text().trim();
+        console.log(`--- Gemini AI Question Generation: ${complaint} ---`);
+        const response = await ai.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: systemPrompt
+        });
+        rawText = response.text || '';
         
-        // Robust JSON Extraction
-        let jsonText = rawText;
-        if (rawText.includes('[')) {
-            jsonText = rawText.substring(rawText.indexOf('['), rawText.lastIndexOf(']') + 1);
-        }
-        
+        let jsonText = rawText.includes('[') ? rawText.substring(rawText.indexOf('['), rawText.lastIndexOf(']') + 1) : rawText;
         const questions = JSON.parse(jsonText);
         const finalQuestions = Array.isArray(questions) ? questions.map(q => ({ text: q, source: 'AI' })) : [];
         console.log(`[Gemini] Generated ${finalQuestions.length} questions successfully.`);
         return finalQuestions;
     } catch (e) {
-        console.error("[Gemini] API error or parsing failed:", e.message);
-        if (rawText) console.error("[Gemini] Raw AI Response was:", rawText);
-        const fallbacks = (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
-        return fallbacks;
+        console.error("[Gemini] API error:", e.message);
+        if (rawText) console.debug("[Gemini] Raw AI Response:", rawText);
+        return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
     }
 };
 
@@ -232,105 +224,49 @@ const getGenericQuestions = (language) => {
 
 const generateSummary = async (patient, complaint, qaPairs, documents, language = 'en', tenantId) => {
     const apiKey = await getApiKey(tenantId);
-    
     if (!apiKey) {
-        const keyFindings = documents.map(d => `${d.filename}: ${d.coordinator_note}`);
         return {
             chief_complaint: complaint,
-            history_of_presenting_illness: `Patient ${patient.name} (${patient.age}y ${patient.gender}) presents with: ${complaint}.\n\nFollow-up Details (Direct Intake):\n${qaPairs.map(qa => `- ${qa.question}: ${qa.answer}`).join('\n')}`,
-            key_findings: keyFindings.length > 0 ? keyFindings : ["No records documented"],
-            clinical_flags: ["Baseline Clinical Assessment Recommended"],
-            assessment_notes: "This is an automated clinical summary synthesized from the intake interaction.",
-            suggested_medications: "Please perform a manual clinical assessment for medication recommendations.",
-            suggested_tests: "Consider baseline diagnostic tests if indicated by symptoms."
+            history_of_presenting_illness: `Patient ${patient.name} presents with ${complaint}. Q&A: ${qaPairs.map(qa => `${qa.question}: ${qa.answer}`).join('; ')}`,
+            key_findings: documents.map(d => d.coordinator_note),
+            clinical_flags: ["Manual Assessment Recommended"],
+            assessment_notes: "Auto-summary fallback.",
+            suggested_medications: "Review required",
+            suggested_tests: "Review required"
         };
     }
 
-    const ai = new GoogleGenAI(apiKey);
-    const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
-
-    const qaPairsText = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
-    const docsText = documents.map(d => `- [${d.filename}]: ${d.coordinator_note}`).join('\n');
-
-    const systemPrompt = `You are a clinical documentation assistant. write a structured consultation summary.
-Patient: ${patient.name}, ${patient.age}y, ${patient.gender}.
-Chief Complaint: ${complaint}
-Follow-up Q&A: \n${qaPairsText}\n
-Docs: \n${docsText || 'None'}\n
-
-Format response as JSON with:
-- chief_complaint
-- history_of_presenting_illness (narrative)
-- key_findings (array of strings)
-- clinical_flags (array of strings)
-- assessment_notes
-- suggested_medications
-- suggested_tests
-
-SUMMARY CONTENT MUST BE IN ENGLISH for medical records. Use high-level clinical vocabulary. Output ONLY raw JSON.`;
+    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+    const qaText = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
+    const prompt = `Write a structured English clinical summary for: ${patient.name}, ${patient.age}y. Complaint: ${complaint}. Q&A: \n${qaText}.\nFormat as JSON with: chief_complaint, history_of_presenting_illness, key_findings (array), clinical_flags (array), assessment_notes, suggested_medications, suggested_tests.`;
 
     try {
-        console.log(`--- Gemini AI Summary Generation Started for Session via ${targetLang} ---`);
-        const model = ai.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
-            generationConfig: { responseMimeType: "application/json" }
+        console.log(`--- Gemini AI Summary: ${patient.name} ---`);
+        const response = await ai.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: prompt
         });
-        
-        const result = await model.generateContent(systemPrompt);
-        const response = await result.response;
-        const text = response.text().trim();
-        const summary = JSON.parse(text);
-        
-        // Ensure non-blank fields using local data as fallback
-        if (!summary.chief_complaint) summary.chief_complaint = complaint;
-        if (!summary.history_of_presenting_illness) {
-            summary.history_of_presenting_illness = `Patient presents with ${complaint}. ${qaPairs.length > 0 ? "Follow-up notes: " + qaPairs.map(qa => `${qa.question}: ${qa.answer}`).join('; ') : ""}`;
-        }
-        if (!summary.key_findings || summary.key_findings.length === 0) {
-            summary.key_findings = documents.length > 0 ? documents.map(d => d.coordinator_note) : ["Routine consult"];
-        }
-
-        console.log("Successfully generated AI summary.");
-        return summary;
+        return JSON.parse(response.text || '{}');
     } catch (e) {
-        console.error("Gemini summary generation failed:", e.message);
-        return {
-            chief_complaint: complaint,
-            history_of_presenting_illness: `[Clinical Intake Fallback] Patient ${patient.name} (${patient.age}y ${patient.gender}) presents with: ${complaint}.\n\nFollow-up Details:\n${qaPairs.map(qa => `- ${qa.question}: ${qa.answer}`).join('\n')}`,
-            key_findings: documents.map(d => `${d.filename}: ${d.coordinator_note}`),
-            clinical_flags: ["Standard Intake Summary (AI Fallback)"],
-            assessment_notes: "This summary was generated via clinical fallback logic due to an AI timeout.",
-            suggested_medications: "N/A - Review required",
-            suggested_tests: "N/A - Review required"
-        };
+        console.error("Summary error:", e.message);
+        return { chief_complaint: complaint, history_of_presenting_illness: "Fallback summary due to error.", key_findings: [], clinical_flags: [], assessment_notes: "", suggested_medications: "", suggested_tests: "" };
     }
 };
 
 const generateDocumentNote = async (filename, description, language = 'en', tenantId) => {
-     const apiKey = await getApiKey(tenantId);
-     if (!apiKey) {
-         return `Attached document: ${filename}. Context: ${description}`;
-     }
+    const apiKey = await getApiKey(tenantId);
+    if (!apiKey) return `Document: ${filename}. Context: ${description}`;
 
-     const ai = new GoogleGenAI(apiKey);
-     const langNames = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' };
-     const contextLang = langNames[language] || 'English';
-
-     const systemPrompt = `The coordinator has uploaded a patient document named "${filename}" and provided the following context (in ${contextLang}): "${description}". 
-Write a very brief, professional one-sentence clinical note in English summarizing what this document is, suitable for a medical record.`;
-    
-     try {
-         console.log(`--- Gemini Document Note Generation for: ${filename} ---`);
-         const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-         const result = await model.generateContent(systemPrompt);
-         const response = await result.response;
-         const note = response.text().trim();
-         console.log("Successfully generated document note.");
-         return note;
-     } catch (e) {
-         console.error("Gemini document note failed:", e.message);
-         return `Attached document: ${filename}. Note: ${description}`;
-     }
+    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: `Write a professional English clinical note for document "${filename}" with context: "${description}".`
+        });
+        return response.text || description;
+    } catch (e) {
+        return `Record: ${filename}. Note: ${description}`;
+    }
 };
 
 module.exports = {
