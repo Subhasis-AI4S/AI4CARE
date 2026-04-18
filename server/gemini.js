@@ -167,7 +167,7 @@ STRICT GUIDELINES:
     try {
         console.log(`--- Gemini AI Question Generation: ${complaint} ---`);
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.0-flash',
             contents: systemPrompt
         });
         rawText = response.text || '';
@@ -262,15 +262,23 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
     const qaText = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
     const prompt = `Write a structured English clinical summary for: ${patient.name}, ${patient.age}y. Complaint: ${complaint}. Q&A: \n${qaText}.\nFormat as JSON with: chief_complaint, history_of_presenting_illness, key_findings (array), clinical_flags (array), assessment_notes, suggested_medications, suggested_tests.`;
 
+    let rawText = '';
     try {
         console.log(`--- Gemini AI Summary: ${patient.name} ---`);
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.0-flash',
             contents: prompt
         });
-        return JSON.parse(response.text || '{}');
+        rawText = response.text || '';
+        
+        // Robust JSON Extraction
+        let jsonText = rawText.includes('{') ? rawText.substring(rawText.indexOf('{'), rawText.lastIndexOf('}') + 1) : rawText;
+        const summary = JSON.parse(jsonText);
+        console.log("[Gemini] Generated summary successfully.");
+        return summary;
     } catch (e) {
         console.error("Summary error:", e.message);
+        if (rawText) console.debug("[Gemini] Raw AI Summary Response:", rawText);
         return { chief_complaint: complaint, history_of_presenting_illness: "Fallback summary due to error.", key_findings: [], clinical_flags: [], assessment_notes: "", suggested_medications: "", suggested_tests: "" };
     }
 };
@@ -282,7 +290,7 @@ const generateDocumentNote = async (filename, description, language = 'en', tena
     const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.0-flash',
             contents: `Write a professional English clinical note for document "${filename}" with context: "${description}".`
         });
         return response.text || description;
