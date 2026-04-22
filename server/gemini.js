@@ -178,8 +178,15 @@ STRICT GUIDELINES:
         console.log(`[Gemini] Generated ${finalQuestions.length} questions successfully.`);
         return finalQuestions;
     } catch (e) {
-        console.error("[Gemini] API error:", e.message);
-        if (rawText) console.debug("[Gemini] Raw AI Response:", rawText);
+        console.error("[Gemini] API error during prompt:", e.message);
+        
+        // --- THE FIX: Maintain Template Questions on API failure ---
+        if (templateQuestions && templateQuestions.length > 0) {
+            console.log(`[Gemini] API failed. Falling back to ${templateQuestions.length} matched templates.`);
+            return templateQuestions.map(q => ({ text: q, source: 'Template Fallback' }));
+        }
+
+        console.warn("[Gemini] API failed and no templates matched. Returning generic questions.");
         return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
     }
 };
