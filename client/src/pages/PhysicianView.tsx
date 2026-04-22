@@ -176,9 +176,9 @@ export const PhysicianView = () => {
                 {/* Formatted Content */}
                 <div className="space-y-10 text-slate-800 dark:text-slate-200">
                     
-                    <div>
+                    <div className="bg-slate-50/50 p-6 rounded-xl border border-slate-100">
                         <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 dark:border-slate-700/50 pb-2">Chief Complaint</h2>
-                        <p className="text-2xl font-semibold leading-snug">{summary.chief_complaint || 'N/A'}</p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-snug">{summary.chief_complaint || 'N/A'}</p>
                     </div>
 
                     <div>
@@ -205,48 +205,80 @@ export const PhysicianView = () => {
                         <p className="text-lg leading-relaxed whitespace-pre-wrap">{summary.assessment_notes || 'No objective notes recorded.'}</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-2 border-slate-100">
-                        <div className="bg-teal-50/50 p-6 rounded-xl border border-teal-100">
-                            <h2 className="text-sm font-bold text-teal-700 uppercase tracking-widest mb-4 flex items-center">
-                                Suggested Medications
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-2 border-slate-800">
+                        <div className="bg-teal-50/30 p-8 rounded-2xl border-2 border-teal-100/50 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                                <Shield className="w-24 h-24 text-teal-900" />
+                            </div>
+                            <h2 className="text-xl font-bold text-teal-800 uppercase tracking-wider mb-4 flex items-center">
+                                <span className="mr-3 text-3xl font-serif">Rx</span> Medications & Dosage
                             </h2>
                             <textarea
                                 value={meds}
                                 onChange={(e) => setMeds(e.target.value)}
                                 readOnly={!isDoctor}
-                                className={`w-full min-h-[150px] p-4 bg-white dark:bg-slate-900 border border-teal-200 rounded-lg text-slate-800 dark:text-slate-200 text-lg leading-relaxed focus:ring-2 focus:ring-teal-500 transition-all placeholder:text-slate-300 ${!isDoctor ? 'cursor-not-allowed opacity-80' : ''}`}
-                                placeholder={isDoctor ? "Enter medications here..." : "No medications prescribed yet."}
+                                className={`w-full min-h-[200px] p-4 bg-white/80 dark:bg-slate-900/80 border border-teal-200 rounded-xl text-slate-800 dark:text-slate-200 text-lg leading-relaxed focus:ring-2 focus:ring-teal-500 transition-all shadow-inner placeholder:text-slate-300 font-medium ${!isDoctor ? 'cursor-not-allowed opacity-80' : ''}`}
+                                placeholder={isDoctor ? "Record prescribed medications here..." : "No medications prescribed yet."}
                             />
                         </div>
-                        <div className="bg-indigo-50/50 p-6 rounded-xl border border-indigo-100">
-                            <h2 className="text-sm font-bold text-indigo-700 uppercase tracking-widest mb-4 flex items-center">
-                                Recommended Tests
+                        <div className="bg-indigo-50/30 p-8 rounded-2xl border-2 border-indigo-100/50 relative overflow-hidden">
+                            <h2 className="text-xl font-bold text-indigo-800 uppercase tracking-wider mb-4 flex items-center">
+                                Investigations & Tests
                             </h2>
                             <textarea
                                 value={tests}
                                 onChange={(e) => setTests(e.target.value)}
                                 readOnly={!isDoctor}
-                                className={`w-full min-h-[150px] p-4 bg-white dark:bg-slate-900 border border-indigo-200 rounded-lg text-slate-800 dark:text-slate-200 text-lg leading-relaxed focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-300 ${!isDoctor ? 'cursor-not-allowed opacity-80' : ''}`}
-                                placeholder={isDoctor ? "Enter recommended tests here..." : "No tests recommended yet."}
+                                className={`w-full min-h-[200px] p-4 bg-white/80 dark:bg-slate-900/80 border border-indigo-200 rounded-xl text-slate-800 dark:text-slate-200 text-lg leading-relaxed focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner placeholder:text-slate-400 font-medium ${!isDoctor ? 'cursor-not-allowed opacity-80' : ''}`}
+                                placeholder={isDoctor ? "Record required investigations here..." : "No tests recommended yet."}
                             />
                         </div>
                     </div>
 
+                    {/* Raw Patient Interactions (QN ANS) */}
+                    <div className="mt-12 bg-slate-50 dark:bg-slate-800/30 p-8 rounded-2xl border border-slate-200 dark:border-slate-700/50 print:bg-white print:border-slate-800">
+                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center">
+                            Patient Follow-up Response Log (Raw Q&A)
+                        </h2>
+                        <div className="space-y-6">
+                            {(data.qaPairs || []).length > 0 ? (
+                                data.qaPairs.map((pair: any, i: number) => (
+                                    <div key={i} className="border-l-4 border-slate-200 dark:border-slate-700 pl-4 py-1">
+                                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">{pair.question}</p>
+                                        <p className="text-lg text-slate-800 dark:text-slate-200 leading-snug">{pair.answer || 'No answer provided'}</p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-slate-400 italic">No follow-up questions were logged for this session.</p>
+                            )}
+                        </div>
+                    </div>
+
                     {!isDoctor && (
-                        <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-600 dark:text-slate-400 text-sm flex items-center print:hidden">
-                            <Shield className="w-5 h-5 mr-3 text-slate-400" />
-                            Note: As a staff member, you can view this clinical summary, but only a Doctor can finalize recommendations and prescriptions.
+                        <div className="mt-8 p-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-2xl text-amber-800 dark:text-amber-200 text-sm flex items-start print:hidden">
+                            <Shield className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p className="font-bold mb-1 tracking-tight uppercase text-xs">Medical Governance Note</p>
+                                <p className="leading-relaxed opacity-90">As a staff member, your access is limited to record viewing. Only an authorized Physician can finalize recommendations, investigations, and prescriptions.</p>
+                            </div>
                         </div>
                     )}
 
                     {isDoctor && (
-                        <div className="flex justify-end pt-4 print:hidden">
+                        <div className="flex justify-end pt-8 print:hidden">
                             <button
                                 onClick={handleSaveRecommendations}
                                 disabled={saving}
-                                className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md disabled:opacity-50 flex items-center"
+                                className="bg-slate-900 dark:bg-teal-600 hover:bg-slate-800 dark:hover:bg-teal-700 text-white px-10 py-4 rounded-2xl font-bold transition-all shadow-xl hover:shadow-2xl active:scale-95 disabled:opacity-50 flex items-center gap-2"
                             >
-                                {saving ? 'Saving...' : 'Finalize Recommendations'}
+                                {saving ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        Processing...
+                                    </>
+                                ) : (
+                                    'Finalize & Save Consultation'
+                                )}
                             </button>
                         </div>
                     )}

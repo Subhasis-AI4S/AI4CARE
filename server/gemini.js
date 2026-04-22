@@ -277,9 +277,19 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
         console.log("[Gemini] Generated summary successfully.");
         return summary;
     } catch (e) {
-        console.error("Summary error:", e.message);
-        if (rawText) console.debug("[Gemini] Raw AI Summary Response:", rawText);
-        return { chief_complaint: complaint, history_of_presenting_illness: "Fallback summary due to error.", key_findings: [], clinical_flags: [], assessment_notes: "", suggested_medications: "", suggested_tests: "" };
+        const manualHpi = qaPairs.length > 0 
+            ? qaPairs.map(qa => `• ${qa.question}: ${qa.answer}`).join('\n')
+            : "No follow-up questions were answered.";
+            
+        return { 
+            chief_complaint: complaint, 
+            history_of_presenting_illness: `[Auto-Fallback] \n${manualHpi}`, 
+            key_findings: documents.map(d => d.coordinator_note || d.filename).filter(n => n), 
+            clinical_flags: ["Manual Assessment Recommended", "AI Quota Exceeded"], 
+            assessment_notes: "The AI was unable to summarize this session due to quota limits. Please review the raw answers above.", 
+            suggested_medications: "Please consult physician for medication.", 
+            suggested_tests: "General physical examination recommended." 
+        };
     }
 };
 
