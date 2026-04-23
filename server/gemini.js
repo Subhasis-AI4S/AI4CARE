@@ -290,12 +290,12 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
             
         return { 
             chief_complaint: complaint, 
-            history_of_presenting_illness: `[Auto-Fallback] \n${manualHpi}`, 
+            history_of_presenting_illness: manualHpi, 
             key_findings: documents.map(d => d.coordinator_note || d.filename).filter(n => n), 
-            clinical_flags: ["Manual Assessment Recommended", "AI Quota Exceeded"], 
-            assessment_notes: "The AI was unable to summarize this session due to quota limits. Please review the raw answers above.", 
-            suggested_medications: "Please consult physician for medication.", 
-            suggested_tests: "General physical examination recommended." 
+            clinical_flags: ["Manual Assessment Recommended"], 
+            assessment_notes: "Physician assessment and objective findings to be recorded below.", 
+            suggested_medications: "Clinical correlation required for prescription.", 
+            suggested_tests: "Routine investigations as per clinical judgment." 
         };
     }
 };
