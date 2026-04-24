@@ -343,7 +343,7 @@ app.post('/api/templates', authenticateToken, async (req, res) => {
 app.put('/api/templates/:id', authenticateToken, async (req, res) => {
     const { name, trigger_keywords, questions } = req.body;
     try {
-        const result = await db.run('UPDATE templates SET name = ?, trigger_keywords = ?, questions = ? WHERE id = ? AND tenant_id = ?', [name, trigger_keywords, JSON.stringify(questions), req.params.id, req.tenantId]);
+        const result = await db.run('UPDATE templates SET name = ?, trigger_keywords = ?, questions = ? WHERE id::text = ? AND tenant_id::text = ?', [name, trigger_keywords, JSON.stringify(questions), req.params.id, req.tenantId]);
         if (result.changes === 0) return res.status(404).json({ error: 'Template not found or unauthorized' });
         res.json({ success: true });
     } catch (err) {
@@ -353,7 +353,7 @@ app.put('/api/templates/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/templates/:id', authenticateToken, async (req, res) => {
     try {
-        const result = await db.run('DELETE FROM templates WHERE id = ? AND tenant_id = ?', [req.params.id, req.tenantId]);
+        const result = await db.run('DELETE FROM templates WHERE id::text = ? AND tenant_id::text = ?', [req.params.id, req.tenantId]);
         if (result.changes === 0) return res.status(404).json({ error: 'Template not found or unauthorized' });
         res.json({ success: true });
     } catch (err) {

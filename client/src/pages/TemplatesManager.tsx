@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { useAppContext } from '../context/AppContext';
+import { toast } from 'react-hot-toast';
 
 export const TemplatesManager = () => {
     const { t } = useTranslation();
@@ -42,11 +43,18 @@ export const TemplatesManager = () => {
 
     const handleDelete = async (id: number) => {
         if (!confirm(t('templates_flow.delete_confirm'))) return;
-        const res = await fetchWithCsrf(`/api/templates/${id}`, { 
-            method: 'DELETE'
-        });
-        if (res.status === 401 || res.status === 403) return logout();
-        fetchTemplates();
+        try {
+            const res = await fetchWithCsrf(`/api/templates/${id}`, { 
+                method: 'DELETE'
+            });
+            if (res.status === 401 || res.status === 403) return logout();
+            if (!res.ok) throw new Error('Failed to delete template');
+            
+            toast.success('Template deleted successfully');
+            fetchTemplates();
+        } catch (err: any) {
+            toast.error(err.message || 'Error deleting template');
+        }
     };
 
     const handleOpenModal = (t: any = null) => {
@@ -166,13 +174,23 @@ const TemplateModal = ({ template, onClose, onSave }: any) => {
         const method = template.id ? 'PUT' : 'POST';
         const url = `/api/templates${template.id ? `/${template.id}` : ''}`;
         
-        const res = await fetchWithCsrf(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        if (res.status === 401 || res.status === 403) return logout();
-        onSave();
+        try {
+            const res = await fetchWithCsrf(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (res.status === 401 || res.status === 403) return logout();
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to save template');
+            }
+            
+            toast.success('Template saved successfully');
+            onSave();
+        } catch (err: any) {
+            toast.error(err.message || 'Error saving template');
+        }
     };
 
     return (
