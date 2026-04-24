@@ -6,14 +6,15 @@ import { useAppContext } from '../context/AppContext';
 
 export const TemplatesManager = () => {
     const { t } = useTranslation();
-    const { logout, user } = useAppContext();
+    const { logout, user, fetchWithCsrf } = useAppContext();
     const [templates, setTemplates] = useState<any[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<any>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     const fetchTemplates = () => {
-        fetch('/api/templates', { credentials: 'include' })
+        if (!fetchWithCsrf) return;
+        fetchWithCsrf('/api/templates')
             .then(res => {
                 if (res.status === 401 || res.status === 403) {
                     logout();
@@ -41,9 +42,8 @@ export const TemplatesManager = () => {
 
     const handleDelete = async (id: number) => {
         if (!confirm(t('templates_flow.delete_confirm'))) return;
-        const res = await fetch(`/api/templates/${id}`, { 
-            method: 'DELETE',
-            credentials: 'include'
+        const res = await fetchWithCsrf(`/api/templates/${id}`, { 
+            method: 'DELETE'
         });
         if (res.status === 401 || res.status === 403) return logout();
         fetchTemplates();
@@ -152,7 +152,7 @@ export const TemplatesManager = () => {
 
 const TemplateModal = ({ template, onClose, onSave }: any) => {
     const { t } = useTranslation();
-    const { logout } = useAppContext();
+    const { logout, fetchWithCsrf } = useAppContext();
     const [name, setName] = useState(template.name || '');
     const [keywords, setKeywords] = useState(template.trigger_keywords || '');
     const [questions, setQuestions] = useState<any[]>(template.questions || ['']);
@@ -166,11 +166,10 @@ const TemplateModal = ({ template, onClose, onSave }: any) => {
         const method = template.id ? 'PUT' : 'POST';
         const url = `/api/templates${template.id ? `/${template.id}` : ''}`;
         
-        const res = await fetch(url, {
+        const res = await fetchWithCsrf(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-            credentials: 'include'
+            body: JSON.stringify(body)
         });
         if (res.status === 401 || res.status === 403) return logout();
         onSave();
