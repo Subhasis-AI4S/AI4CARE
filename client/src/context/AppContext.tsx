@@ -79,10 +79,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       currentToken = await fetchCsrfToken();
     }
 
-    const headers = {
-      ...options.headers,
-      'X-CSRF-Token': currentToken || '',
-    };
+    // Use Headers polyfill-safe approach
+    const headers = new Headers(options.headers || {});
+    if (currentToken) {
+        headers.set('X-CSRF-Token', currentToken);
+    }
 
     const res = await fetch(url, {
       ...options,
@@ -91,12 +92,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
 
     if (res.status === 403 && url !== '/api/csrf-token') {
-      // Token might be expired, try one refresh
       const newToken = await fetchCsrfToken();
       if (newToken) {
+        const retryHeaders = new Headers(options.headers || {});
+        retryHeaders.set('X-CSRF-Token', newToken);
         return fetch(url, {
           ...options,
-          headers: { ...options.headers, 'X-CSRF-Token': newToken },
+          headers: retryHeaders,
           credentials: 'include'
         });
       }

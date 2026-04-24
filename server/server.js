@@ -73,16 +73,16 @@ const csrfProtection = (req, res, next) => {
     // 1. Safe methods are always allowed
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
 
-    // 2. Check for custom security header
+    // 2. Check for custom security header (case-insensitive in req.headers)
     const token = req.headers['x-csrf-token'];
     
-    // In our app, we expect the client to send a token or at least the header.
-    // We allow a simple presence check if the origin is also verified.
+    // Log for debugging (Only in dev or if troubleshooting)
     if (!token) {
-        console.warn(`[SECURITY] Potential CSRF Attempt Blocked: Missing X-CSRF-Token header on ${req.method} ${req.url}`);
+        const fullUrl = req.originalUrl || req.url;
+        console.warn(`[SECURITY] Blocked ${req.method} ${fullUrl} - Missing X-CSRF-Token. Headers present: ${Object.keys(req.headers).join(', ')}`);
         return res.status(403).json({ 
-            error: 'Security validation failed. Please refresh the page.',
-            code: 'EBADCSRFTOKEN' // Maintain code for frontend error handling
+            error: 'Security session expired. Please refresh the page.',
+            code: 'EBADCSRFTOKEN'
         });
     }
     next();
