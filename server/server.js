@@ -50,6 +50,9 @@ async function initializeDatabase() {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy for Render/Cloud environments to handle HTTPS cookies correctly
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(compression());
 app.use(cors({
@@ -60,7 +63,13 @@ app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // CSRF Protection (Must be after cookieParser)
-const csrfProtection = csrf({ cookie: true });
+const csrfProtection = csrf({ 
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    }
+});
 app.get('/api/csrf-token', csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
 });
