@@ -1,6 +1,6 @@
 const db = require('./database');
 
-const templates = [
+const templatesToUpdate = [
     {
         name: 'Cough',
         keywords: 'cough, khansi, phlegm, cough out, sputum',
@@ -37,7 +37,7 @@ const templates = [
     },
     {
         name: 'Blood in Sputum (Hemoptysis)',
-        keywords: 'blood in sputum, hemoptysis, blood in cough, coughing blood, red sputum',
+        keywords: 'hemoptysis, blood in cough, coughing blood, red sputum',
         questions: [
             "Is it just a few streaks of blood in your phlegm, or are you coughing up spoonfuls of pure blood?",
             "Does the blood come up with a cough, or do you feel it coming from the back of your nose, or are you vomiting it up?",
@@ -114,35 +114,31 @@ const templates = [
     }
 ];
 
-const migrate = async () => {
-    console.log("[Sync] Starting global clinical template migration...");
-    const tenantIds = ['default-clinic-id', 'demo-tenant-id']; 
-
-    try {
-        for (const tenantId of tenantIds) {
-            for (const t of templates) {
-                // Find by exact name OR if the name is contained in trigger keywords to avoid duplication
-                const existing = await db.get("SELECT id FROM templates WHERE (name = ? OR trigger_keywords LIKE ?) AND tenant_id = ?", [t.name, `%${t.name.toLowerCase()}%`, tenantId]);
-                
-                if (existing) {
-                    console.log(`[Sync] Updating clinical template: ${t.name} for tenant ${tenantId}`);
-                    await db.run("UPDATE templates SET name = ?, questions = ?, trigger_keywords = ? WHERE id = ?", [t.name, JSON.stringify(t.questions), t.keywords, existing.id]);
-                } else {
-                    console.log(`[Sync] Creating new clinical template: ${t.name} for tenant ${tenantId}`);
-                    // Note: We omit 'id' to let SQLite/PostgreSQL handle auto-increment/serial properly
-                    await db.run("INSERT INTO templates (name, questions, trigger_keywords, tenant_id) VALUES (?, ?, ?, ?)", [
-                        t.name,
-                        JSON.stringify(t.questions),
-                        t.keywords,
-                        tenantId
-                    ]);
-                }
+async function syncTemplates() {
+    console.log("[Sync] Starting clinical template synchronization...");
+    for (const t of templatesToUpdate) {
+        try {
+            // Find by exact name OR if the name is contained in trigger keywords to avoid duplication
+            const existing = await db.get("SELECT id FROM templates WHERE name = ? OR trigger_keywords LIKE ?", [t.name, `%${t.name.toLowerCase()}%`]);
+            
+            if (existing) {
+                console.log(`[Sync] Updating clinical template: ${t.name}`);
+                await db.run("UPDATE templates SET questions = ?, trigger_keywords = ? WHERE id = ?", [JSON.stringify(t.questions), t.keywords, existing.id]);
+            } else {
+                console.log(`[Sync] Provisioning new clinical template: ${t.name}`);
+                // Note: We omit 'id' to let SQLite/PostgreSQL handle auto-increment/serial properly
+                await db.run("INSERT INTO templates (name, questions, trigger_keywords, tenant_id) VALUES (?, ?, ?, ?)", [
+                    t.name,
+                    JSON.stringify(t.questions),
+                    t.keywords,
+                    'demo-tenant-id' // Default tenant assignment
+                ]);
             }
+        } catch (e) {
+            console.error(`[Sync] Failed to sync ${t.name}:`, e.message);
         }
-        console.log("[Sync] Clinical template synchronization finished.");
-    } catch (err) {
-        console.error("[Sync] Template migration failed:", err.message);
     }
-};
+    console.log("[Sync] Clinical template synchronization finished.");
+}
 
-module.exports = migrate;
+module.exports = syncTemplates;
