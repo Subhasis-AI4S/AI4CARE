@@ -236,7 +236,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     <AppContext.Provider value={{ 
       user, login, logout,
       clinicName, doctorName,
-      clinicAddress, clinicEmail, clinicPhone,
+      specialization, clinicAddress, clinicEmail, clinicPhone,
       licenseNumber,
       isLoading, error, fetchSettings, updateSettings,
       theme, toggleTheme,
