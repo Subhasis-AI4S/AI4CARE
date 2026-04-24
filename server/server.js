@@ -342,11 +342,49 @@ app.post('/api/templates', authenticateToken, async (req, res) => {
 
 app.put('/api/templates/:id', authenticateToken, async (req, res) => {
     const { name, trigger_keywords, questions } = req.body;
+    const templateId = req.params.id;
+    const tenantId = req.tenantId;
+
     try {
-        const result = await db.run('UPDATE templates SET name = ?, trigger_keywords = ?, questions = ? WHERE id::text = ? AND tenant_id::text = ?', [name, trigger_keywords, JSON.stringify(questions), req.params.id, req.tenantId]);
-        if (result.changes === 0) return res.status(404).json({ error: 'Template not found or unauthorized' });
-        res.json({ success: true });
+        // 1. Try to update an existing template owned by this tenant
+        const result = await db.run(
+            'UPDATE templates SET name = ?, trigger_keywords = ?, questions = ? WHERE id::text = ? AND tenant_id::text = ?',
+            [name, trigger_keywords, JSON.stringify(questions), templateId, tenantId]
+        );
+
+        if (result.changes > 0) {
+            return res.json({ success: true, message: 'Template updated' });
+        }
+
+        // 2. If no rows updated, check if user is trying to "override" a global template
+        const globalTemplate = await db.get(
+            "SELECT * FROM templates WHERE id::text = ? AND tenant_id = 'default-clinic-id'",
+            [templateId]
+        );
+
+        if (globalTemplate) {
+            console.log(`[Templates] Tenant ${tenantId} is overriding global template: ${globalTemplate.name}`);
+            
+            // Create a new custom version for this tenant
+            // If PostgreSQL, generate a new UUID; if SQLite, let it auto-increment
+            if (db.isPg) {
+                const newId = require('crypto').randomUUID();
+                await db.run(
+                    'INSERT INTO templates (id, name, trigger_keywords, questions, tenant_id) VALUES (?, ?, ?, ?, ?)',
+                    [newId, name, trigger_keywords, JSON.stringify(questions), tenantId]
+                );
+            } else {
+                await db.run(
+                    'INSERT INTO templates (name, trigger_keywords, questions, tenant_id) VALUES (?, ?, ?, ?)',
+                    [name, trigger_keywords, JSON.stringify(questions), tenantId]
+                );
+            }
+            return res.json({ success: true, message: 'Custom override created' });
+        }
+
+        res.status(404).json({ error: 'Template not found or unauthorized' });
     } catch (err) {
+        console.error('[Templates] PUT failed:', err);
         res.status(500).json({ error: err.message });
     }
 });
