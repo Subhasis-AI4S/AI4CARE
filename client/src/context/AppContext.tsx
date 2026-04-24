@@ -25,9 +25,11 @@ interface AppContextType {
     clinic_address?: string;
     clinic_email?: string;
     clinic_phone?: string;
+    license_number?: string;
   }) => Promise<void>;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+  licenseNumber: string;
   fetchCsrfToken: () => Promise<string | null>;
   fetchWithCsrf: (url: string, options?: RequestInit) => Promise<Response>;
 }
@@ -50,6 +52,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [clinicAddress, setClinicAddress] = useState<string>('');
   const [clinicEmail, setClinicEmail] = useState<string>('');
   const [clinicPhone, setClinicPhone] = useState<string>('');
+  const [licenseNumber, setLicenseNumber] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -173,6 +176,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (data.clinic_address) setClinicAddress(data.clinic_address);
       if (data.clinic_email) setClinicEmail(data.clinic_email);
       if (data.clinic_phone) setClinicPhone(data.clinic_phone);
+      if (data.license_number) setLicenseNumber(data.license_number);
     } catch (err: any) {
       setError(err.message);
       console.error(err);
@@ -198,6 +202,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (settings.clinic_address) setClinicAddress(settings.clinic_address);
       if (settings.clinic_email) setClinicEmail(settings.clinic_email);
       if (settings.clinic_phone) setClinicPhone(settings.clinic_phone);
+      if (settings.hasOwnProperty('license_number')) setLicenseNumber(settings.license_number || '');
       
       if (user) {
         const updatedUser = { 
@@ -231,7 +236,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     <AppContext.Provider value={{ 
       user, login, logout,
       clinicName, doctorName,
-      specialization, clinicAddress, clinicEmail, clinicPhone,
+      clinicAddress, clinicEmail, clinicPhone,
+      licenseNumber,
       isLoading, error, fetchSettings, updateSettings,
       theme, toggleTheme,
       fetchCsrfToken, fetchWithCsrf

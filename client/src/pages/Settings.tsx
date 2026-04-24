@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 
 export const Settings = () => {
     const { t } = useTranslation();
-    const { clinicName, doctorName, specialization, clinicAddress, clinicEmail, clinicPhone, updateSettings, logout, user, fetchWithCsrf } = useAppContext();
+    const { clinicName, doctorName, specialization, clinicAddress, clinicEmail, clinicPhone, licenseNumber, updateSettings, logout, user, fetchWithCsrf } = useAppContext();
     
     const [localClinic, setLocalClinic] = useState(clinicName);
     const [localDoctor, setLocalDoctor] = useState(doctorName);
@@ -14,6 +14,7 @@ export const Settings = () => {
     const [localAddress, setLocalAddress] = useState(clinicAddress);
     const [localEmail, setLocalEmail] = useState(clinicEmail);
     const [localPhone, setLocalPhone] = useState(clinicPhone);
+    const [localLicense, setLocalLicense] = useState(licenseNumber);
 
     useEffect(() => {
         setLocalClinic(clinicName);
@@ -22,7 +23,8 @@ export const Settings = () => {
         setLocalAddress(clinicAddress);
         setLocalEmail(clinicEmail);
         setLocalPhone(clinicPhone);
-    }, [clinicName, doctorName, specialization, clinicAddress, clinicEmail, clinicPhone]);
+        setLocalLicense(licenseNumber);
+    }, [clinicName, doctorName, specialization, clinicAddress, clinicEmail, clinicPhone, licenseNumber]);
 
     const [apiKey, setApiKey] = useState('');
     const [autoSave, setAutoSave] = useState(true);
@@ -58,6 +60,7 @@ export const Settings = () => {
                 clinic_address: localAddress,
                 clinic_email: localEmail,
                 clinic_phone: localPhone,
+                license_number: localLicense,
                 gemini_api_key: apiKey,
                 auto_save: autoSave.toString(),
                 export_format: 'PDF'
@@ -137,6 +140,18 @@ export const Settings = () => {
                                 className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium"
                                 placeholder="+1 (555) 000-0000"
                             />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Medical License Number (Optional)</label>
+                            <input 
+                                type="text"
+                                value={localLicense}
+                                onChange={(e) => setLocalLicense(e.target.value)}
+                                autoComplete="off"
+                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium"
+                                placeholder="e.g. Reg. MN-29381"
+                            />
+                            <p className="text-[10px] text-slate-400 mt-1 italic">Used only for formalizing prescriptions.</p>
                         </div>
                     </div>
                     <div>

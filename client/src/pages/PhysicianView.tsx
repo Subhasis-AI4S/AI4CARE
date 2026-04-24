@@ -15,7 +15,7 @@ const safeFormatDate = (dateStr: string | null | undefined, formatStr: string = 
 
 export const PhysicianView = () => {
     const { id } = useParams();
-    const { clinicName, doctorName, user, logout, fetchWithCsrf } = useAppContext();
+    const { clinicName, doctorName, licenseNumber, user, logout, fetchWithCsrf } = useAppContext();
     const isDoctor = user?.role === 'doctor' || user?.role === 'admin';
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -262,7 +262,9 @@ export const PhysicianView = () => {
                         <div className="text-center min-w-[200px]">
                             <div className="border-b-2 border-slate-300 w-full mb-2"></div>
                             <p className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-widest">Physician Signature</p>
-                            <p className="text-xs text-slate-500 italic mt-1">Authorized Medical Practice License: Reg. MN-29381</p>
+                            {licenseNumber && (
+                                <p className="text-xs text-slate-500 italic mt-1">Authorized Medical Practice License: {licenseNumber}</p>
+                            )}
                         </div>
                     </div>
 
