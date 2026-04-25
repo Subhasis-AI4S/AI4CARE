@@ -10,6 +10,7 @@ const multer = require('multer');
 // Removed csurf to use custom stateless security middleware
 const { authenticateToken } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
+const superadminRoutes = require('./routes/superadmin');
 const { addSummaryJob } = require('./utils/queue');
 const storageService = require('./utils/storage');
 // Start the worker
@@ -38,10 +39,32 @@ async function initializeDatabase() {
         const migrateTemplates = require('./db/migrate_templates');
         await migrateTemplates();
 
-        const addDetailedTemplates = require('./db/add_detailed_respiratory_templates');
-        await addDetailedTemplates();
+        // 5. Seed Default Super Admin
+        try {
+            const { hashPassword } = require('./utils/auth');
+            const superadminEmail = 'superadmin@ai4care.com';
+            const existing = await db.get('SELECT id FROM users WHERE email = ? AND role = ?', [superadminEmail, 'superadmin']);
+            
+            if (!existing) {
+                const superId = 'super-admin-uuid';
+                const superTenantId = 'superadmin-tenant-id';
+                const hashedPassword = await hashPassword('ai4care-super-admin');
+                
+                // Create superadmin tenant
+                await db.run('INSERT INTO tenants (id, name, status) VALUES (?, ?, ?) ON CONFLICT (id) DO NOTHING',
+                    [superTenantId, 'AI4CARE Platform Admin', 'active']);
+                
+                // Create superadmin user
+                await db.run('INSERT INTO users (id, tenant_id, email, password_hash, full_name, role) VALUES (?, ?, ?, ?, ?, ?)',
+                    [superId, superTenantId, superadminEmail, hashedPassword, 'AI4CARE Super Admin', 'superadmin']);
+                
+                console.log("[Seeding] Default Super Admin created: superadmin@ai4care.com");
+            }
+        } catch (e) {
+            console.warn("[Seeding] Super Admin check skipped:", e.message);
+        }
 
-        // 5. Security: Clear legacy/leaked API keys from database
+        // 6. Security: Clear legacy/leaked API keys from database
         try {
             await db.run("UPDATE settings SET value = '' WHERE key = 'gemini_api_key' AND (tenant_id = 'default-clinic-id' OR value LIKE 'AIzaSy%')");
             console.log("[Security] Legacy API keys cleared from database.");
@@ -106,6 +129,9 @@ app.use('/api/auth', csrfProtection, authRoutes);
 
 // Apply CSRF protection to all other API routes
 app.use('/api', csrfProtection);
+
+// Super Admin Routes
+app.use('/api/superadmin', superadminRoutes);
 
 // Patients API
 app.get('/api/patients', authenticateToken, async (req, res) => {

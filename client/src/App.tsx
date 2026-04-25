@@ -12,7 +12,8 @@ import {
   Moon, 
   Sun, 
   Stethoscope,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 import { useAppContext, AppProvider } from './context/AppContext';
 
@@ -27,6 +28,7 @@ import { Settings } from './pages/Settings';
 import { StaffManagement } from './pages/StaffManagement';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { SuperAdminDashboard } from './pages/SuperAdminDashboard';
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAppContext();
   const location = useLocation();
@@ -71,6 +73,7 @@ const Sidebar = () => {
     ...(user?.role === 'doctor' || user?.role === 'admin' ? [{ name: 'Staff Management', path: '/staff', icon: Users }] : []),
     { name: t('templates'), path: '/templates', icon: FileText },
     { name: t('settings'), path: '/settings', icon: SettingsIcon },
+    ...(user?.role === 'superadmin' ? [{ name: 'Platform Management', path: '/superadmin', icon: ShieldCheck }] : []),
   ];
   return (
     <div className="w-64 bg-surface border-r border-border h-screen flex flex-col shadow-sm transition-colors duration-300">
@@ -174,6 +177,7 @@ function App() {
                       <Route path="/templates" element={<PageTransition><TemplatesManager /></PageTransition>} />
                       <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
                       <Route path="/staff" element={<PageTransition><StaffManagement /></PageTransition>} />
+                      <Route path="/superadmin" element={<PageTransition><SuperAdminDashboard /></PageTransition>} />
                       <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                   </AnimatePresence>

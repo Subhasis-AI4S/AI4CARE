@@ -38,7 +38,11 @@ export const Login = () => {
              }
  
              login(data.user);
-             navigate('/');
+             if (data.user.role === 'superadmin') {
+                 navigate('/superadmin');
+             } else {
+                 navigate('/');
+             }
          } catch (err: any) {
              setError(err.message);
          } finally {
