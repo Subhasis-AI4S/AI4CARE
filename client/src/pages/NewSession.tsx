@@ -4,8 +4,10 @@ import { Mic, Square, ArrowRight, ArrowLeft, CheckCircle2, FileText, Upload, Spa
 import { useVoice } from '../hooks/useVoice';
 import { useGemini } from '../hooks/useGemini';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-hot-toast';
 
 import { useAppContext } from '../context/AppContext';
+import { PatientSearch } from '../components/PatientSearch';
 
 export const NewSession = () => {
     const { id } = useParams();
@@ -27,6 +29,7 @@ export const NewSession = () => {
     
     // Step 1: Patient
     const [patient, setPatient] = useState({ name: '', age: '', gender: 'Male', contact: '' });
+    const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
     const [sessionId, setSessionId] = useState<number | null>(null);
 
     // Step 2: Complaint
@@ -161,32 +164,37 @@ export const NewSession = () => {
     const handlePatientSubmit = async () => {
         if (!patient.name || !patient.age) return alert('Name and age are required');
         
-        // Create patient and session
         try {
             if (!fetchWithCsrf) return;
-            const pRes = await fetchWithCsrf('/api/patients', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(patient)
-            });
-            if (pRes.status === 401) return logout();
-            const pData = await pRes.json();
+            
+            let finalPatientId = selectedPatientId;
+
+            // Only create if it's a new patient (no ID selected from search)
+            if (!finalPatientId) {
+                const pRes = await fetchWithCsrf('/api/patients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(patient)
+                });
+                if (pRes.status === 401) return logout();
+                const pData = await pRes.json();
+                finalPatientId = pData.id;
+            }
 
             const sRes = await fetchWithCsrf('/api/sessions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ patient_id: pData.id, complaint: '' })
+                body: JSON.stringify({ patient_id: finalPatientId, complaint: '' })
             });
             if (sRes.status === 401) return logout();
             const sData = await sRes.json();
             setSessionId(sData.id);
             
-            // Navigate to the permanent session URL so refresh doesn't break state
             navigate(`/session/resume/${sData.id}`, { replace: true });
-            
             setStep(2);
         } catch (err) {
             console.error(err);
+            alert('Failed to initialize session');
         }
     };
 
@@ -376,8 +384,38 @@ export const NewSession = () => {
                 
                 {/* STEP 1: PATIENT INFO */}
                 {step === 1 && (
-                    <div className="flex-1 animate-in fade-in duration-300 overflow-y-auto">
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-6 border-b border-slate-100 pb-4">Patient Details</h2>
+                    <div className="flex-1 animate-in fade-in duration-300 overflow-y-auto pr-2">
+                        <div className="mb-10">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Patient Search</h2>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Find an existing patient globally by Name, Phone, or ID.</p>
+                            <PatientSearch onSelect={(p) => {
+                                setPatient({
+                                    name: p.name,
+                                    age: p.age.toString(),
+                                    gender: p.gender || 'Male',
+                                    contact: p.contact || ''
+                                });
+                                setSelectedPatientId(p.id);
+                                toast.success(`Selected patient: ${p.name}`);
+                            }} />
+                        </div>
+
+                        <div className="relative mb-10">
+                            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                                <span className="px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full font-bold text-slate-400 uppercase tracking-widest text-[10px]">OR REGISTER NEW PATIENT</span>
+                            </div>
+                        </div>
+
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center gap-2">
+                            {selectedPatientId ? 'Patient Details (Selected)' : 'Direct Registration'}
+                            {selectedPatientId && <button onClick={() => {
+                                setPatient({ name: '', age: '', gender: 'Male', contact: '' });
+                                setSelectedPatientId(null);
+                            }} className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded-lg ml-2 hover:bg-slate-200 transition-colors">Clear</button>}
+                        </h2>
                         <div className="grid grid-cols-2 gap-6">
                             <div className="col-span-2">
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Full Name <span className="text-red-500">*</span></label>

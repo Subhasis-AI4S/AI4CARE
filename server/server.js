@@ -72,6 +72,16 @@ async function initializeDatabase() {
             console.warn("[Security] API key cleanup skipped:", e.message);
         }
 
+        // 7. Initialize Search Indexes
+        try {
+            await db.run('CREATE INDEX IF NOT EXISTS idx_patient_name ON patients (name)');
+            await db.run('CREATE INDEX IF NOT EXISTS idx_patient_contact ON patients (contact)');
+            await db.run('CREATE INDEX IF NOT EXISTS idx_patient_id ON patients (id)');
+            console.log("[Seeding] Patient Search indexes verified.");
+        } catch (e) {
+            console.warn("[Seeding] Index creation skipped:", e.message);
+        }
+
         console.log("--- Automated Setup Complete ---");
     } catch (err) {
         console.error("Warning: Automated setup failed:", err.message);
@@ -150,6 +160,32 @@ app.post('/api/patients', authenticateToken, async (req, res) => {
         res.json({ id: result.lastID, name, age, gender, contact, tenant_id: req.tenantId });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/patients/search', authenticateToken, async (req, res) => {
+    const { q } = req.query;
+    if (!q) return res.json([]);
+
+    try {
+        const query = `
+            SELECT * FROM patients 
+            WHERE tenant_id = ? 
+            AND (
+                name ILIKE ? 
+                OR contact ILIKE ? 
+                OR id::text ILIKE ?
+            )
+            ORDER BY created_at DESC 
+            LIMIT 20
+        `;
+        const searchSql = query.replace(/ILIKE/g, db.isPg ? 'ILIKE' : 'LIKE');
+        const term = `%${q}%`;
+        const rows = await db.all(searchSql, [req.tenantId, term, term, term]);
+        res.json(rows);
+    } catch (err) {
+        console.error('[Patient Search] Error:', err);
+        res.status(500).json({ success: false, message: 'Search failed' });
     }
 });
 
