@@ -190,7 +190,7 @@ router.post('/login', async (req, res) => {
             params = [email, tenantId];
         } else {
             // Admin (doctor) login: find by email with doctor/admin role
-            query = "SELECT u.*, t.name as clinic_name FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.email = ? AND u.role IN ('doctor', 'admin') LIMIT 1";
+            query = "SELECT u.*, t.name as clinic_name FROM users u JOIN tenants t ON u.tenant_id = t.id WHERE u.email = ? AND u.role IN ('doctor', 'admin', 'superadmin') LIMIT 1";
             params = [email];
         }
 
