@@ -44,20 +44,20 @@ async function initializeDatabase() {
             const { hashPassword } = require('./utils/auth');
             const superadminEmail = 'superadmin@ai4care.com';
             const existing = await db.get('SELECT id FROM users WHERE email = ? AND role = ?', [superadminEmail, 'superadmin']);
-            
+
             if (!existing) {
                 const superId = 'super-admin-uuid';
                 const superTenantId = 'superadmin-tenant-id';
                 const hashedPassword = await hashPassword('ai4care-super-admin');
-                
+
                 // Create superadmin tenant
                 await db.run('INSERT INTO tenants (id, name, status) VALUES (?, ?, ?) ON CONFLICT (id) DO NOTHING',
                     [superTenantId, 'AI4CARE Platform Admin', 'active']);
-                
+
                 // Create superadmin user
                 await db.run('INSERT INTO users (id, tenant_id, email, password_hash, full_name, role) VALUES (?, ?, ?, ?, ?, ?)',
                     [superId, superTenantId, superadminEmail, hashedPassword, 'AI4CARE Super Admin', 'superadmin']);
-                
+
                 console.log("[Seeding] Default Super Admin created: superadmin@ai4care.com");
             }
         } catch (e) {
@@ -70,16 +70,6 @@ async function initializeDatabase() {
             console.log("[Security] Legacy API keys cleared from database.");
         } catch (e) {
             console.warn("[Security] API key cleanup skipped:", e.message);
-        }
-
-        // 7. Initialize Search Indexes
-        try {
-            await db.run('CREATE INDEX IF NOT EXISTS idx_patient_name ON patients (name)');
-            await db.run('CREATE INDEX IF NOT EXISTS idx_patient_contact ON patients (contact)');
-            await db.run('CREATE INDEX IF NOT EXISTS idx_patient_id ON patients (id)');
-            console.log("[Seeding] Patient Search indexes verified.");
-        } catch (e) {
-            console.warn("[Seeding] Index creation skipped:", e.message);
         }
 
         console.log("--- Automated Setup Complete ---");
@@ -116,12 +106,12 @@ const csrfProtection = (req, res, next) => {
 
     // 2. Check for custom security header (case-insensitive in req.headers)
     const token = req.headers['x-csrf-token'];
-    
+
     // Log for debugging (Only in dev or if troubleshooting)
     if (!token) {
         const fullUrl = req.originalUrl || req.url;
         console.warn(`[SECURITY] Blocked ${req.method} ${fullUrl} - Missing X-CSRF-Token. Headers present: ${Object.keys(req.headers).join(', ')}`);
-        return res.status(403).json({ 
+        return res.status(403).json({
             error: 'Security session expired. Please refresh the page.',
             code: 'EBADCSRFTOKEN'
         });
@@ -160,32 +150,6 @@ app.post('/api/patients', authenticateToken, async (req, res) => {
         res.json({ id: result.lastID, name, age, gender, contact, tenant_id: req.tenantId });
     } catch (err) {
         res.status(500).json({ error: err.message });
-    }
-});
-
-app.get('/api/patients/search', authenticateToken, async (req, res) => {
-    const { q } = req.query;
-    if (!q) return res.json([]);
-
-    try {
-        const query = `
-            SELECT * FROM patients 
-            WHERE tenant_id = ? 
-            AND (
-                name ILIKE ? 
-                OR contact ILIKE ? 
-                OR id::text ILIKE ?
-            )
-            ORDER BY created_at DESC 
-            LIMIT 20
-        `;
-        const searchSql = query.replace(/ILIKE/g, db.isPg ? 'ILIKE' : 'LIKE');
-        const term = `%${q}%`;
-        const rows = await db.all(searchSql, [req.tenantId, term, term, term]);
-        res.json(rows);
-    } catch (err) {
-        console.error('[Patient Search] Error:', err);
-        res.status(500).json({ success: false, message: 'Search failed' });
     }
 });
 
@@ -237,11 +201,11 @@ app.post('/api/sessions', authenticateToken, async (req, res) => {
     const { patient_id, complaint } = req.body;
     try {
         const result = await db.run("INSERT INTO sessions (patient_id, complaint, status, tenant_id) VALUES (?, ?, 'in_progress', ?)", [patient_id, complaint, req.tenantId]);
-        
+
         if (!result.lastID) {
             console.error(`[CRITICAL] Session creation failed to return an ID. Tenant: ${req.tenantId}`);
         }
-        
+
         res.json({ id: result.lastID, patient_id, complaint, status: 'in_progress', tenant_id: req.tenantId });
     } catch (err) {
         console.error('[Session Create] Failed:', err);
@@ -295,7 +259,7 @@ app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
             await tx.run('DELETE FROM qa_pairs WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
             await tx.run('DELETE FROM documents WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
             await tx.run('DELETE FROM summaries WHERE session_id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
-            
+
             // Delete the session itself
             const result = await tx.run('DELETE FROM sessions WHERE id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
             if (result.changes === 0) throw new Error('Failed to delete session record');
@@ -379,12 +343,12 @@ app.get('/api/templates', authenticateToken, async (req, res) => {
         // We use DISTINCT ON (name) to deduplicate if the tenant has a custom template that overrides a global one.
         // We order by name, then by tenant_id descending (so the tenant's UUID comes before 'default-clinic-id' alphabetically usually,
         // or we simply order by case: tenant's ID first). Actually, just manually deduplicate in JS to be safe across DBs.
-        
+
         const rows = await db.all(
             "SELECT * FROM templates WHERE tenant_id = 'default-clinic-id' OR tenant_id = ? ORDER BY name ASC",
             [req.tenantId]
         );
-        
+
         const uniqueTemplates = new Map();
         for (const row of rows) {
             // If the map already has this template name, only overwrite it if the current row belongs to the tenant
@@ -392,7 +356,7 @@ app.get('/api/templates', authenticateToken, async (req, res) => {
                 uniqueTemplates.set(row.name, row);
             }
         }
-        
+
         res.json(Array.from(uniqueTemplates.values()));
     } catch (err) {
         console.error('Templates API error:', err.message);
@@ -434,7 +398,7 @@ app.put('/api/templates/:id', authenticateToken, async (req, res) => {
 
         if (globalTemplate) {
             console.log(`[Templates] Tenant ${tenantId} is overriding global template: ${globalTemplate.name}`);
-            
+
             // Create a new custom version for this tenant
             // If PostgreSQL, generate a new UUID; if SQLite, let it auto-increment
             if (db.isPg) {
@@ -536,10 +500,10 @@ app.post('/api/sessions/:id/documents', authenticateToken, upload.single('docume
 
     try {
         const uploadResult = await storageService.uploadFile(req.file);
-        
+
         const result = await db.run('INSERT INTO documents (session_id, filename, file_path, coordinator_note, tenant_id) VALUES (?, ?, ?, ?, ?)',
             [sessionId, req.file.originalname, uploadResult.url || uploadResult.fileName, note, req.tenantId]);
-        
+
         // Cleanup local file if it was uploaded to cloud
         if (uploadResult.provider !== 'local' && fs.existsSync(req.file.path)) {
             fs.unlinkSync(req.file.path);
@@ -603,8 +567,8 @@ app.post('/api/gemini/summary', authenticateToken, async (req, res) => {
 
         // Return a dummy summary structure so the frontend doesn't crash if it expects one, 
         // but mark it as pending so it knows to poll.
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: 'AI summary generation started in background',
             summary: { status: 'pending', session_id: sessionId }
         });
