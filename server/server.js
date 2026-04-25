@@ -41,6 +41,14 @@ async function initializeDatabase() {
         const addDetailedTemplates = require('./db/add_detailed_respiratory_templates');
         await addDetailedTemplates();
 
+        // 5. Security: Clear legacy/leaked API keys from database
+        try {
+            await db.run("UPDATE settings SET value = '' WHERE key = 'gemini_api_key' AND (tenant_id = 'default-clinic-id' OR value LIKE 'AIzaSy%')");
+            console.log("[Security] Legacy API keys cleared from database.");
+        } catch (e) {
+            console.warn("[Security] API key cleanup skipped:", e.message);
+        }
+
         console.log("--- Automated Setup Complete ---");
     } catch (err) {
         console.error("Warning: Automated setup failed:", err.message);
