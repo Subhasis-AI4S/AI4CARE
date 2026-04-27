@@ -83,11 +83,13 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         if (otherLangTags.some(tag => nameUpper.includes(tag))) return false;
         
         const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
-        const cleanComplaint = lowerComplaint.replace(/\s+/g, ""); // No spaces
         
         return keywords.some(k => {
-            const cleanK = k.replace(/\s+/g, "");
-            return cleanComplaint.includes(cleanK);
+            // Use regex for whole-word matching to avoid partial overlaps like 'ache' in 'headache'
+            // but still allow phrases like 'abdominal pain' to match 'I have abdominal pain'
+            const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex special chars
+            const regex = new RegExp(`(^|\\P{L})${escapedK}(\\P{L}|$)`, 'iu');
+            return regex.test(lowerComplaint);
         });
     });
 
@@ -126,18 +128,18 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
             console.error(`[Templates] Failure parsing questions for ${t.name}:`, e);
         }
     }
-    templateQuestions = allQuestions;
+    const templateQuestions = allQuestions;
 
     // 2. Fall back to Gemini for enrichment or full generation
     const apiKey = await getApiKey(tenantId);
     if (!apiKey) {
-        let finalQs = templateQuestions.map(q => ({ text: q, source: 'Template' }));
+        let finalQs = templateQuestions;
         // Floor of 6: If templates don't provide enough questions, fill with generic ones
         if (finalQs.length < 5) {
-            const extra = (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic' }));
-            const existingTexts = new Set(finalQs.map(f => f.text.toLowerCase()));
+            const extra = getGenericQuestions(language);
+            const existingTexts = new Set(finalQs.map(f => f.toLowerCase()));
             for (const ex of extra) {
-                if (!existingTexts.has(ex.text.toLowerCase()) && finalQs.length < 6) {
+                if (!existingTexts.has(ex.toLowerCase()) && finalQs.length < 6) {
                     finalQs.push(ex);
                 }
             }
@@ -167,7 +169,7 @@ STRICT GUIDELINES:
     try {
         console.log(`--- Gemini AI Question Generation: ${complaint} ---`);
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-1.5-flash',
             contents: systemPrompt
         });
         rawText = response.text || '';
