@@ -153,7 +153,8 @@ export const NewSession = () => {
             if (sRes.status === 401 || sRes.status === 403) return logout();
             const sData = await sRes.json();
             setSessionId(sData.id);
-
+            
+            navigate(`/session/resume/${sData.id}`, { replace: true });
             setStep(2);
         } catch (err) {
             console.error(err);
