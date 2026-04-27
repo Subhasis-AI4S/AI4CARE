@@ -87,7 +87,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         
         return keywords.some(k => {
             const cleanK = k.replace(/\s+/g, "");
-            return cleanComplaint.includes(cleanK) || cleanK.includes(cleanComplaint);
+            return cleanComplaint.includes(cleanK);
         });
     });
 
@@ -146,7 +146,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         return finalQs;
     }
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1' });
+    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
     const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
     const templateContext = templateQuestions.length > 0 
         ? `\nCLINICAL CONTEXT (INCLUDE THESE QUESTIONS): \n${templateQuestions.map((q, i) => `${i+1}. ${q}`).join('\n')}` 
@@ -167,14 +167,14 @@ STRICT GUIDELINES:
     try {
         console.log(`--- Gemini AI Question Generation: ${complaint} ---`);
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-1.5-flash-latest',
             contents: systemPrompt
         });
         rawText = response.text || '';
         
         let jsonText = rawText.includes('[') ? rawText.substring(rawText.indexOf('['), rawText.lastIndexOf(']') + 1) : rawText;
         const questions = JSON.parse(jsonText);
-        const finalQuestions = Array.isArray(questions) ? questions.map(q => ({ text: q, source: 'AI' })) : [];
+        const finalQuestions = Array.isArray(questions) ? questions.map(q => typeof q === 'string' ? q : q.text || JSON.stringify(q)) : [];
         console.log(`[Gemini] Generated ${finalQuestions.length} questions successfully.`);
         return finalQuestions;
     } catch (e) {
@@ -183,11 +183,11 @@ STRICT GUIDELINES:
         // --- THE FIX: Maintain Template Questions on API failure ---
         if (templateQuestions && templateQuestions.length > 0) {
             console.log(`[Gemini] API failed. Falling back to ${templateQuestions.length} matched templates.`);
-            return templateQuestions.map(q => ({ text: q, source: 'Template Fallback' }));
+            return templateQuestions;
         }
 
         console.warn("[Gemini] API failed and no templates matched. Returning generic questions.");
-        return (getGenericQuestions(language)).map(q => ({ text: q, source: 'Generic Fallback' }));
+        return getGenericQuestions(language);
     }
 };
 
@@ -265,7 +265,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
         };
     }
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1' });
+    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
     const qaText = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
     const prompt = `Write a structured English clinical summary for: ${patient.name}, ${patient.age}y. Complaint: ${complaint}. Q&A: \n${qaText}.\nFormat as JSON with: chief_complaint, history_of_presenting_illness, key_findings (array), clinical_flags (array), assessment_notes, suggested_medications, suggested_tests.`;
 
@@ -273,7 +273,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
     try {
         console.log(`--- Gemini AI Summary: ${patient.name} ---`);
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-1.5-flash-latest',
             contents: prompt
         });
         rawText = response.text || '';
@@ -304,10 +304,10 @@ const generateDocumentNote = async (filename, description, language = 'en', tena
     const apiKey = await getApiKey(tenantId);
     if (!apiKey) return `Document: ${filename}. Context: ${description}`;
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1' });
+    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-1.5-flash-latest',
             contents: `Write a professional English clinical note for document "${filename}" with context: "${description}".`
         });
         return response.text || description;
