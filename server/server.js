@@ -64,10 +64,10 @@ async function initializeDatabase() {
             console.warn("[Seeding] Super Admin check skipped:", e.message);
         }
 
-        // 6. Security: Clear legacy/leaked API keys from database
+        // 6. Security: Clear leaked API keys (if any) from specific default templates
         try {
-            await db.run("UPDATE settings SET value = '' WHERE key = 'gemini_api_key' AND (tenant_id = 'default-clinic-id' OR value LIKE 'AIzaSy%')");
-            console.log("[Security] Legacy API keys cleared from database.");
+            await db.run("UPDATE settings SET value = '' WHERE key = 'gemini_api_key' AND tenant_id = 'default-clinic-id'");
+            console.log("[Security] Default API keys cleared.");
         } catch (e) {
             console.warn("[Security] API key cleanup skipped:", e.message);
         }
