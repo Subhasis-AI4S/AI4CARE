@@ -67,13 +67,13 @@ export const ResetPassword = () => {
 
     if (success) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-900 transition-colors">
-                <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 p-8 text-center">
+            <div className="min-h-screen flex items-center justify-center p-6 bg-background transition-colors">
+                <div className="w-full max-w-md bg-surface rounded-3xl shadow-xl overflow-hidden border border-border p-8 text-center">
                     <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
                         <KeyRound className="w-8 h-8" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight mb-2">Password Reset Successful</h2>
-                    <p className="text-slate-500 dark:text-slate-400 mb-8">
+                    <h2 className="text-2xl font-bold text-text tracking-tight mb-2">Password Reset Successful</h2>
+                    <p className="text-text-muted mb-8">
                         Your password has been securely updated. You can now use your new password to log in to your account.
                     </p>
                     <button 
@@ -88,8 +88,8 @@ export const ResetPassword = () => {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-900 transition-colors">
-            <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 relative">
+        <div className="min-h-screen flex items-center justify-center p-6 bg-background transition-colors">
+            <div className="w-full max-w-md bg-surface rounded-3xl shadow-xl overflow-hidden border border-border relative">
                 
                 {/* Decorative Header */}
                 <div className="h-32 bg-gradient-to-r from-teal-600 to-indigo-600 flex items-center justify-center relative overflow-hidden">
@@ -100,35 +100,35 @@ export const ResetPassword = () => {
                 </div>
 
                 {/* Form Content */}
-                <div className="px-8 py-10 relative z-10 -mt-6 bg-white dark:bg-slate-800 rounded-t-3xl">
+                <div className="px-8 py-10 relative z-10 -mt-6 bg-surface rounded-t-3xl">
                     <div className="text-center mb-8">
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Create New Password</h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm max-w-[280px] mx-auto">
+                        <h1 className="text-2xl font-bold text-text tracking-tight">Create New Password</h1>
+                        <p className="text-text-muted mt-2 text-sm max-w-[280px] mx-auto">
                             Your new password must be at least 8 characters long and different from your previous password.
                         </p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">New Password</label>
+                            <label className="block text-sm font-semibold text-text mb-1.5 ml-1">New Password</label>
                             <input 
                                 type="password" 
                                 required
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-slate-900 dark:text-slate-100"
+                                className="w-full bg-background border border-border rounded-2xl py-3.5 px-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-text"
                                 placeholder={"••••••••"}
                             />
                         </div>
                         
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Confirm New Password</label>
+                            <label className="block text-sm font-semibold text-text mb-1.5 ml-1">Confirm New Password</label>
                             <input 
                                 type="password" 
                                 required
                                 value={confirmPassword}
-                                onChange={e => setConfirmPassword(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-slate-900 dark:text-slate-100"
+                                onChange={ConfirmPassword => setConfirmPassword(ConfirmPassword.target.value)}
+                                className="w-full bg-background border border-border rounded-2xl py-3.5 px-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-text"
                                 placeholder={"••••••••"}
                             />
                         </div>

@@ -82,11 +82,11 @@ export const SuperAdminDashboard = () => {
         <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3">
+                    <h1 className="text-3xl font-bold text-text flex items-center gap-3">
                         <ShieldCheck className="w-8 h-8 text-teal-600" />
                         Platform Management
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Oversee all clinical installations and global configurations.</p>
+                    <p className="text-text-muted mt-1">Oversee all clinical installations and global configurations.</p>
                 </div>
             </header>
 
@@ -119,32 +119,32 @@ export const SuperAdminDashboard = () => {
             </div>
 
             {/* Tenant Management Section */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Clinic Directory</h2>
+            <div className="bg-surface rounded-3xl shadow-sm border border-border overflow-hidden">
+                <div className="px-6 py-5 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h2 className="text-xl font-bold text-text">Clinic Directory</h2>
                     <div className="relative w-full md:w-80">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                         <input 
                             type="text" 
                             placeholder="Search by clinic name or UUID..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
+                            className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm text-text"
                         />
                     </div>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-slate-50 dark:bg-slate-800/30">
+                        <thead className="bg-background">
                             <tr>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Clinic Details</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Usage</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-widest">Clinic Details</th>
+                                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-widest">Status</th>
+                                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-widest text-center">Usage</th>
+                                <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                        <tbody className="divide-y divide-border">
                             {filteredTenants.map((clinic) => (
                                 <tr key={clinic.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
                                     <td className="px-6 py-5">
@@ -153,8 +153,8 @@ export const SuperAdminDashboard = () => {
                                                 {clinic.name.charAt(0)}
                                             </div>
                                             <div>
-                                                <div className="font-bold text-slate-800 dark:text-slate-200">{clinic.name}</div>
-                                                <div className="text-[10px] font-mono text-slate-400">{clinic.id}</div>
+                                                <div className="font-bold text-text">{clinic.name}</div>
+                                                <div className="text-[10px] font-mono text-text-muted">{clinic.id}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -170,12 +170,12 @@ export const SuperAdminDashboard = () => {
                                     <td className="px-6 py-5">
                                         <div className="flex justify-center gap-6 items-center">
                                             <div className="text-center">
-                                                <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{clinic.patient_count}</div>
-                                                <div className="text-[10px] text-slate-400 uppercase">Patients</div>
+                                                <div className="text-sm font-bold text-text">{clinic.patient_count}</div>
+                                                <div className="text-[10px] text-text-muted uppercase">Patients</div>
                                             </div>
                                             <div className="text-center">
-                                                <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{clinic.session_count}</div>
-                                                <div className="text-[10px] text-slate-400 uppercase">Sessions</div>
+                                                <div className="text-sm font-bold text-text">{clinic.session_count}</div>
+                                                <div className="text-[10px] text-text-muted uppercase">Sessions</div>
                                             </div>
                                         </div>
                                     </td>
@@ -213,7 +213,7 @@ const StatCard = ({ title, value, icon: Icon, color }: any) => {
     return (
         <div className={`bg-gradient-to-br ${colors[color]} p-6 rounded-3xl border border shadow-sm`}>
             <div className="flex items-center justify-between mb-4">
-                <div className="p-2 bg-white/80 dark:bg-slate-900/80 rounded-xl">
+                <div className="p-2 bg-background/80 rounded-xl">
                     <Icon className="w-5 h-5" />
                 </div>
                 <TrendingUp className="w-4 h-4 opacity-50" />

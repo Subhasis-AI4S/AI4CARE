@@ -142,7 +142,7 @@ export const Dashboard = () => {
                         </button>
                     </div>
                 </div>
-                <Link to="/session/new" className="bg-white dark:bg-slate-900 text-primary px-6 py-3 rounded-xl font-bold shadow-sm hover:bg-slate-50 dark:bg-slate-800/50 transition-all flex items-center group w-full md:w-auto justify-center">
+                <Link to="/session/new" className="bg-surface text-primary px-6 py-3 rounded-xl font-bold shadow-sm hover:bg-background transition-all flex items-center group w-full md:w-auto justify-center border border-border">
                     <Activity className="w-5 h-5 mr-2 text-teal-600 group-hover:scale-110 transition-transform" />
                     {t('new_session')}
                 </Link>
@@ -241,24 +241,24 @@ export const Dashboard = () => {
                     </div>
                     <div className="flex-1 overflow-y-auto">
                         {recentSessions.length === 0 ? (
-                            <div className="p-6 text-center text-slate-500 dark:text-slate-400">{t('common.no_data')}</div>
+                            <div className="p-6 text-center text-text-muted">{t('common.no_data')}</div>
                         ) : (
                             <ul className="divide-y divide-border">
                                 {recentSessions.map((session: any) => (
                                     <li key={session.id}>
-                                        <Link to={session.status === 'in_progress' ? `/session/resume/${session.id}` : `/session/${session.id}`} className="block p-4 hover:bg-slate-50 dark:bg-slate-800/50 dark:hover:bg-slate-800 transition-colors">
+                                        <Link to={session.status === 'in_progress' ? `/session/resume/${session.id}` : `/session/${session.id}`} className="block p-4 hover:bg-background transition-colors">
                                             <div className="flex justify-between items-start mb-1">
                                                 <div className="flex items-center">
-                                                    <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-full mr-3 text-slate-600 dark:text-slate-300 dark:text-slate-300">
+                                                    <div className="bg-background p-2 rounded-full mr-3 text-text-muted">
                                                         <User className="w-4 h-4" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold text-text">{session.patient_name || 'Anonymous'} <span className="text-slate-400 font-normal text-sm">({session.patient_age || '?'})</span></p>
+                                                        <p className="font-semibold text-text">{session.patient_name || 'Anonymous'} <span className="text-text-muted font-normal text-sm">({session.patient_age || '?'})</span></p>
                                                         <p className="text-xs text-text-muted">{safeFormatDate(session.created_at, 'MMM dd, yyyy h:mm a')}</p>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="mt-2 text-sm text-slate-600 dark:text-slate-300 line-clamp-1 ml-11">
+                                            <div className="mt-2 text-sm text-text line-clamp-1 ml-11">
                                                 {session.summary_complaint || session.complaint}
                                             </div>
                                             <div className="mt-2 ml-11">

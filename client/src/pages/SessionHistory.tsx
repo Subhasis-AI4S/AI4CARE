@@ -99,25 +99,25 @@ export const SessionHistory = () => {
     return (
         <div className="p-8 max-w-7xl mx-auto h-full flex flex-col">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200">{t('sessions')}</h1>
-                <p className="text-slate-500 mt-1">{t('sessions_flow.subtitle')}</p>
+                <h1 className="text-3xl font-bold text-text">{t('sessions')}</h1>
+                <p className="text-text-muted mt-1">{t('sessions_flow.subtitle')}</p>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/50 flex-1 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/50 flex flex-wrap gap-4 items-center justify-between">
+            <div className="bg-surface rounded-2xl shadow-sm border border-border flex-1 flex flex-col overflow-hidden">
+                <div className="p-4 border-b border-border bg-background flex flex-wrap gap-4 items-center justify-between">
                     <div className="relative flex-1 min-w-[300px] max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted w-5 h-5" />
                         <input 
                             type="text" 
                             placeholder={t('sessions_flow.search_placeholder')} 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white dark:bg-slate-900"
+                            className="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent bg-surface"
                         />
                     </div>
                     <div className="flex items-center space-x-3">
-                        <div className="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg px-3 py-2">
-                            <SlidersHorizontal className="w-4 h-4 mr-2 text-slate-400" />
+                        <div className="flex items-center text-sm font-medium text-text bg-surface border border-border rounded-lg px-3 py-2">
+                            <SlidersHorizontal className="w-4 h-4 mr-2 text-text-muted" />
                             <select 
                                 value={statusFilter} 
                                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -138,18 +138,18 @@ export const SessionHistory = () => {
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
                         </div>
                     ) : filteredSessions.length === 0 ? (
-                        <div className="text-center p-12 text-slate-500">
+                        <div className="text-center p-12 text-text-muted">
                             {t('sessions_flow.no_sessions')}
                         </div>
                     ) : (
-                        <table className="min-w-full divide-y divide-slate-200">
-                            <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0 z-10">
+                        <table className="min-w-full divide-y divide-border">
+                            <thead className="bg-background sticky top-0 z-10">
                                 <tr>
-                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('sessions_flow.th_patient')}</th>
-                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider pl-16">{t('sessions_flow.th_complaint')}</th>
-                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('sessions_flow.th_date')}</th>
-                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('sessions_flow.th_status')}</th>
-                                    <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('sessions_flow.th_actions')}</th>
+                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">{t('sessions_flow.th_patient')}</th>
+                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-text-muted uppercase tracking-wider pl-16">{t('sessions_flow.th_complaint')}</th>
+                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">{t('sessions_flow.th_date')}</th>
+                                    <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-text-muted uppercase tracking-wider">{t('sessions_flow.th_status')}</th>
+                                    <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-text-muted uppercase tracking-wider">{t('sessions_flow.th_actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200">
@@ -159,7 +159,7 @@ export const SessionHistory = () => {
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: idx * 0.05 }}
-                                        className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors group"
+                                        className="hover:bg-background transition-colors group"
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
@@ -167,17 +167,17 @@ export const SessionHistory = () => {
                                                     <User className="h-5 w-5" />
                                                 </div>
                                                 <div className="ml-4">
-                                                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{s.patient_name}</div>
-                                                    <div className="text-sm text-slate-500">{s.patient_age} yrs • {s.gender || 'U'}</div>
+                                                    <div className="text-sm font-bold text-text">{s.patient_name}</div>
+                                                    <div className="text-sm text-text-muted">{s.patient_age} yrs • {s.gender || 'U'}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-sm text-slate-900 dark:text-slate-100 max-w-md truncate" title={s.summary_complaint || s.complaint}>{s.summary_complaint || s.complaint}</div>
+                                            <div className="text-sm text-text max-w-md truncate" title={s.summary_complaint || s.complaint}>{s.summary_complaint || s.complaint}</div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted">
                                             {safeFormatDate(s.created_at)}<br/>
-                                            <span className="text-xs text-slate-400">{safeFormatDate(s.created_at, 'h:mm a')}</span>
+                                            <span className="text-xs text-text-muted/60">{safeFormatDate(s.created_at, 'h:mm a')}</span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <StatusBadge status={s.status} />

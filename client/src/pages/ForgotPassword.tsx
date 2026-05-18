@@ -38,8 +38,8 @@ export const ForgotPassword = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-900 transition-colors">
-            <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700/50 relative">
+        <div className="min-h-screen flex items-center justify-center p-6 bg-background transition-colors">
+            <div className="w-full max-w-md bg-surface rounded-3xl shadow-xl overflow-hidden border border-border relative">
                 
                 {/* Decorative Header */}
                 <div className="h-32 bg-gradient-to-r from-teal-600 to-indigo-600 flex items-center justify-center relative overflow-hidden">
@@ -50,10 +50,10 @@ export const ForgotPassword = () => {
                 </div>
 
                 {/* Form Content */}
-                <div className="px-8 py-10 relative z-10 -mt-6 bg-white dark:bg-slate-800 rounded-t-3xl">
+                <div className="px-8 py-10 relative z-10 -mt-6 bg-surface rounded-t-3xl">
                     <div className="text-center mb-8">
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Forgot Password</h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm max-w-[280px] mx-auto">
+                        <h1 className="text-2xl font-bold text-text tracking-tight">Forgot Password</h1>
+                        <p className="text-text-muted mt-2 text-sm max-w-[280px] mx-auto">
                             Enter your email address and we'll securely send you a link to reset your password.
                         </p>
                     </div>
@@ -75,15 +75,15 @@ export const ForgotPassword = () => {
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Email Address</label>
+                                <label className="block text-sm font-semibold text-text mb-1.5 ml-1">Email Address</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
                                     <input 
                                         type="email" 
                                         required
                                         value={email}
                                         onChange={e => setEmail(e.target.value)}
-                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/50 rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                                        className="w-full bg-background border border-border rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all text-text placeholder:text-text-muted"
                                         placeholder="dr.smith@clinic.com"
                                     />
                                 </div>
@@ -101,7 +101,7 @@ export const ForgotPassword = () => {
 
                     {!submitted && (
                         <div className="mt-8 text-center">
-                            <Link to="/login" className="inline-flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium transition-colors text-sm">
+                            <Link to="/login" className="inline-flex items-center text-text-muted hover:text-text font-medium transition-colors text-sm">
                                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
                             </Link>
                         </div>

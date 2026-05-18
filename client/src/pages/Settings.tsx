@@ -75,25 +75,25 @@ export const Settings = () => {
 
     return (
         <div className="p-8 max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-8">{t('settings')}</h1>
+            <h1 className="text-3xl font-bold text-text mb-8">{t('settings')}</h1>
 
             {/* Success and Error messages removed in favor of toast */}
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/50 overflow-hidden mb-8">
-                <div className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/50 px-6 py-4">
-                    <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">{t('settings_flow.clinic_profile')}</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('settings_flow.clinic_profile_desc')}</p>
+            <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden mb-8">
+                <div className="bg-background border-b border-border px-6 py-4">
+                    <h2 className="text-lg font-semibold text-text">{t('settings_flow.clinic_profile')}</h2>
+                    <p className="text-sm text-text-muted">{t('settings_flow.clinic_profile_desc')}</p>
                 </div>
                 <div className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('settings_flow.clinic_label')}</label>
+                            <label className="block text-sm font-medium text-text mb-2">{t('settings_flow.clinic_label')}</label>
                             <input 
                                 type="text"
                                 value={localClinic}
                                 onChange={(e) => setLocalClinic(e.target.value)}
                                 autoComplete="organization"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium"
+                                className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium text-text"
                                 placeholder="Enter clinic name"
                             />
                         </div>
@@ -137,7 +137,7 @@ export const Settings = () => {
                                 value={localPhone}
                                 onChange={(e) => setLocalPhone(e.target.value)}
                                 autoComplete="tel"
-                                className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium"
+                                className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium text-text"
                                 placeholder="+1 (555) 000-0000"
                             />
                         </div>
@@ -159,28 +159,28 @@ export const Settings = () => {
                         <textarea 
                             value={localAddress}
                             onChange={(e) => setLocalAddress(e.target.value)}
-                            className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium h-24 resize-none"
+                            className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium h-24 resize-none text-text"
                             placeholder="Full address of the clinic..."
                         ></textarea>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/50 overflow-hidden mb-8">
-                <div className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/50 px-6 py-4">
-                    <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">{t('settings_flow.ai_title')}</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('settings_flow.ai_desc')}</p>
+            <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden mb-8">
+                <div className="bg-background border-b border-border px-6 py-4">
+                    <h2 className="text-lg font-semibold text-text">{t('settings_flow.ai_title')}</h2>
+                    <p className="text-sm text-text-muted">{t('settings_flow.ai_desc')}</p>
                 </div>
                 <div className="p-6">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('settings_flow.api_key_label')}</label>
+                    <label className="block text-sm font-medium text-text mb-2">{t('settings_flow.api_key_label')}</label>
                     <input 
                         type="password"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
-                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-mono text-sm"
+                        className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-mono text-sm text-text"
                         placeholder="AIzaSy..."
                     />
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">{t('settings_flow.api_key_desc')}</p>
+                    <p className="text-xs text-text-muted mt-2">{t('settings_flow.api_key_desc')}</p>
                     
                     <div className="mt-6 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 rounded-xl p-4">
                         <h3 className="text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center">
@@ -199,9 +199,9 @@ export const Settings = () => {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/50 overflow-hidden mb-8">
-                <div className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/50 px-6 py-4">
-                    <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">{t('settings_flow.pref_title')}</h2>
+            <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden mb-8">
+                <div className="bg-background border-b border-border px-6 py-4">
+                    <h2 className="text-lg font-semibold text-text">{t('settings_flow.pref_title')}</h2>
                 </div>
                 <div className="p-6">
                     <label className="flex items-center space-x-3 cursor-pointer">

@@ -132,7 +132,15 @@ export const NewSession = () => {
     // --- Actions ---
 
     const handlePatientSubmit = async () => {
-        if (!patient.name || !patient.age) return alert('Name and age are required');
+        if (!patient.name || !patient.age || !patient.gender || !patient.contact) {
+            return alert('All patient fields (Name, Age, Gender, and Contact) are required');
+        }
+
+        // Mobile number validation (simple regex for 10 digits as a base)
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!phoneRegex.test(patient.contact.replace(/\s/g, ''))) {
+            return alert('Please enter a valid 10-digit mobile number');
+        }
 
         // Create patient and session
         try {
@@ -296,17 +304,17 @@ export const NewSession = () => {
                         <div className="flex flex-col items-center gap-2.5 flex-1 group">
                             <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold transition-all duration-500 ${step >= s.id
                                     ? 'bg-accent text-white shadow-[0_0_15px_rgba(13,148,136,0.4)]'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                                    : 'bg-background text-text-muted border border-border'
                                 }`}>
                                 {step > s.id ? <CheckCircle2 className="w-5 h-5 animate-in zoom-in duration-300" /> : s.id}
                             </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-[0.1em] transition-colors duration-300 ${step >= s.id ? 'text-accent' : 'text-slate-400'
+                            <span className={`text-[10px] font-bold uppercase tracking-[0.1em] transition-colors duration-300 ${step >= s.id ? 'text-accent' : 'text-text-muted'
                                 }`}>
                                 {s.label}
                             </span>
                         </div>
                         {i < steps.length - 1 && (
-                            <div className={`h-[2px] w-full mx-4 rounded-full transition-all duration-700 ${step > s.id ? 'bg-accent shadow-[0_0_10px_rgba(13,148,136,0.3)]' : 'bg-slate-100 dark:bg-slate-800'
+                            <div className={`h-[2px] w-full mx-4 rounded-full transition-all duration-700 ${step > s.id ? 'bg-accent shadow-[0_0_10px_rgba(13,148,136,0.3)]' : 'bg-background'
                                 }`} />
                         )}
                     </div>
@@ -321,13 +329,13 @@ export const NewSession = () => {
                 <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
                     <CheckCircle2 className="w-12 h-12" />
                 </div>
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">Session Complete!</h1>
-                <p className="text-slate-600 mb-8 max-w-md">The patient intake session has been successfully recorded and the clinical summary is ready for the physician.</p>
+                <h1 className="text-3xl font-bold text-text mb-2">Session Complete!</h1>
+                <p className="text-text-muted mb-8 max-w-md">The patient intake session has been successfully recorded and the clinical summary is ready for the physician.</p>
                 <div className="flex gap-4">
                     <button onClick={() => navigate(`/physician/${sessionId}`)} className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-all shadow-sm">
                         Open Physician View
                     </button>
-                    <button onClick={() => navigate('/')} className="px-6 py-3 bg-white text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-all shadow-sm border border-slate-200">
+                    <button onClick={() => navigate('/')} className="px-6 py-3 bg-surface text-text font-medium rounded-xl hover:bg-background transition-all shadow-sm border border-border">
                         Back to Dashboard
                     </button>
                 </div>
@@ -340,40 +348,40 @@ export const NewSession = () => {
             <h1 className="text-3xl font-bold text-text mb-2">{t('new_session')}</h1>
             {renderStepTracker()}
 
-            <div className="bg-surface rounded-2xl shadow-xl shadow-slate-200/40 dark:shadow-none border border-border p-8 flex-1 flex flex-col transition-all duration-300">
+            <div className="bg-surface rounded-2xl shadow-xl dark:shadow-none border border-border p-8 flex-1 flex flex-col transition-all duration-300">
 
                 {/* STEP 1: PATIENT INFO */}
                 {step === 1 && (
                     <div className="flex-1 animate-in fade-in duration-300 overflow-y-auto">
-                        <h2 className="text-xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4">Patient Details</h2>
+                        <h2 className="text-xl font-bold text-text mb-6 border-b border-border pb-4">Patient Details</h2>
                         <div className="grid grid-cols-2 gap-6">
                             <div className="col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Full Name <span className="text-red-500">*</span></label>
-                                <input value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })} type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500" placeholder="e.g. John Doe" />
+                                <label className="block text-sm font-medium text-text mb-2">Full Name <span className="text-red-500">*</span></label>
+                                <input value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })} type="text" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text" placeholder="e.g. John Doe" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Age <span className="text-red-500">*</span></label>
-                                <input value={patient.age} onChange={e => setPatient({ ...patient, age: e.target.value })} type="number" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500" placeholder="e.g. 45" />
+                                <label className="block text-sm font-medium text-text mb-2">Age <span className="text-red-500">*</span></label>
+                                <input value={patient.age} onChange={e => setPatient({ ...patient, age: e.target.value })} type="number" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text" placeholder="e.g. 45" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Gender</label>
-                                <select value={patient.gender} onChange={e => setPatient({ ...patient, gender: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500">
+                                <label className="block text-sm font-medium text-text mb-2">Gender <span className="text-red-500">*</span></label>
+                                <select value={patient.gender} onChange={e => setPatient({ ...patient, gender: e.target.value })} className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text">
                                     <option>Male</option>
                                     <option>Female</option>
                                     <option>Other</option>
                                 </select>
                             </div>
                             <div className="col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Contact Number</label>
-                                <input value={patient.contact} onChange={e => setPatient({ ...patient, contact: e.target.value })} type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500" placeholder="Optional" />
+                                <label className="block text-sm font-medium text-text mb-2">Contact Number <span className="text-red-500">*</span></label>
+                                <input value={patient.contact} onChange={e => setPatient({ ...patient, contact: e.target.value })} type="text" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text" placeholder="e.g. 9876543210" />
                             </div>
 
-                            <div className="col-span-2 bg-slate-50 p-6 rounded-2xl border border-dashed border-teal-200 mt-4">
+                            <div className="col-span-2 bg-background p-6 rounded-2xl border border-dashed border-teal-200 mt-4">
                                 <div className="flex items-center mb-4">
                                     <Languages className="w-5 h-5 text-teal-600 mr-2" />
-                                    <h3 className="font-bold text-slate-800">Patient Interview Language</h3>
+                                    <h3 className="font-bold text-text">Patient Interview Language</h3>
                                 </div>
-                                <p className="text-sm text-slate-500 mb-4">The AI will use this language for voice recognition and follow-up questions.</p>
+                                <p className="text-sm text-text-muted mb-4">The AI will use this language for voice recognition and follow-up questions.</p>
                                 <div className="flex gap-3">
                                     {[
                                         { id: 'en', name: 'English', icon: '🇺🇸' },
@@ -383,7 +391,7 @@ export const NewSession = () => {
                                         <button
                                             key={lang.id}
                                             onClick={() => setInterviewLanguage(lang.id)}
-                                            className={`flex-1 p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 ${interviewLanguage === lang.id ? 'bg-teal-600 border-teal-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-600 hover:border-teal-300'}`}
+                                            className={`flex-1 p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 ${interviewLanguage === lang.id ? 'bg-teal-600 border-teal-600 text-white shadow-md' : 'bg-surface border-border text-text-muted hover:border-teal-300'}`}
                                         >
                                             <span className="text-xl">{lang.icon}</span>
                                             <span className="font-bold text-sm tracking-wide">{lang.name}</span>
@@ -404,16 +412,16 @@ export const NewSession = () => {
                 {step === 2 && (
                     <div className="flex-1 animate-in fade-in flex flex-col">
                         <div className="flex items-center justify-between mb-2">
-                            <h2 className="text-xl font-bold text-slate-800">Chief Complaint</h2>
-                            <div className="flex items-center text-teal-600 bg-teal-50 px-3 py-1 rounded-full text-sm font-semibold border border-teal-100">
+                            <h2 className="text-xl font-bold text-text">Chief Complaint</h2>
+                            <div className="flex items-center text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-4 py-1 rounded-full text-sm font-semibold border border-teal-100 dark:border-teal-900/30">
                                 <Languages className="w-3.5 h-3.5 mr-1.5" />
                                 {interviewLanguage === 'en' ? 'English' : interviewLanguage === 'hi' ? 'Hindi' : 'Bengali'} Mode
                             </div>
                         </div>
-                        <p className="text-slate-500 mb-6 border-b border-slate-100 pb-4">Describe why the patient is visiting today. You can type or use voice dictation.</p>
+                        <p className="text-text-muted mb-6 border-b border-border pb-4">Describe why the patient is visiting today. You can type or use voice dictation.</p>
 
                         <div className="flex-1 flex flex-col">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Complaint Description</label>
+                            <label className="block text-sm font-medium text-text mb-2">Complaint Description</label>
                             <textarea
                                 value={complaintText}
                                 onChange={e => {
@@ -421,7 +429,7 @@ export const NewSession = () => {
                                         setComplaintText(e.target.value);
                                     }
                                 }}
-                                className={`w-full flex-1 min-h-[200px] p-4 bg-slate-50 border rounded-2xl focus:ring-2 transition-all resize-none text-lg leading-relaxed ${isListening ? 'border-teal-400 ring-2 ring-teal-100' : 'border-slate-200 focus:ring-teal-500'}`}
+                                className={`w-full flex-1 min-h-[200px] p-4 bg-background border rounded-2xl focus:ring-2 transition-all resize-none text-lg leading-relaxed text-text ${isListening ? 'border-accent ring-2 ring-accent/10' : 'border-border focus:ring-accent'}`}
                                 placeholder="Start typing or click the microphone to speak..."
                             />
 
@@ -450,14 +458,14 @@ export const NewSession = () => {
                                 ) : (
                                     <div className="text-amber-600 bg-amber-50 p-3 rounded-lg text-sm">Voice recognition not supported in this browser. Please type.</div>
                                 )}
-                                <span className={`text-sm font-medium transition-opacity ${isListening ? 'text-teal-600 block' : 'text-slate-400'}`}>
+                                <span className={`text-sm font-medium transition-opacity ${isListening ? 'text-teal-600 block' : 'text-text-muted'}`}>
                                     {isListening ? 'Listening...' : 'Click to Speak'}
                                 </span>
                             </div>
                         </div>
 
-                        <div className="mt-8 flex justify-between items-center border-t border-slate-100 pt-6">
-                            <button onClick={() => setStep(1)} className="text-slate-500 hover:text-slate-800 font-medium flex items-center px-4 py-2">
+                        <div className="mt-8 flex justify-between items-center border-t border-border pt-6">
+                            <button onClick={() => setStep(1)} className="text-text-muted hover:text-text font-medium flex items-center px-4 py-2">
                                 <ArrowLeft className="w-5 h-5 mr-2" /> {t('common.back')}
                             </button>
                             <button onClick={handleComplaintSubmit} disabled={geminiLoading} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-medium flex items-center transition-all shadow-sm disabled:opacity-50">
@@ -472,10 +480,10 @@ export const NewSession = () => {
                     <div className="flex-1 animate-in fade-in flex flex-col space-y-8">
                         {geminiLoading && aiQuestions.length === 0 ? (
                             <div className="space-y-8 py-6 w-full max-w-2xl mx-auto">
-                                <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-xl w-3/4 animate-pulse" />
+                                <div className="h-10 bg-background rounded-xl w-3/4 animate-pulse" />
                                 <div className="space-y-4">
-                                    <div className="h-32 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-border w-full animate-pulse" />
-                                    <div className="h-24 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-border w-5/6 animate-pulse opacity-60" />
+                                    <div className="h-32 bg-background rounded-3xl border border-border w-full animate-pulse" />
+                                    <div className="h-24 bg-background rounded-3xl border border-border w-5/6 animate-pulse opacity-60" />
                                 </div>
                                 <div className="flex items-center text-accent gap-3 font-bold animate-shimmer bg-gradient-to-r from-transparent via-accent/10 to-transparent bg-[length:400%_100%] rounded-xl p-3 w-fit">
                                     <Sparkles className="w-5 h-5 animate-spin" />
@@ -500,7 +508,7 @@ export const NewSession = () => {
                                         <h3 className="text-2xl md:text-3xl font-semibold text-text relative z-10 leading-snug">"{aiQuestions[currentQIndex]}"</h3>
                                     </div>
 
-                                    <label className="block text-sm font-medium text-slate-700 mb-2 ml-1">Patient's Answer</label>
+                                    <label className="block text-sm font-medium text-text mb-2 ml-1">Patient's Answer</label>
                                     <div className="relative">
                                         <textarea
                                             value={answers[currentQIndex]}
@@ -511,7 +519,7 @@ export const NewSession = () => {
                                                     setAnswers(newAnswers);
                                                 }
                                             }}
-                                            className={`w-full min-h-[120px] p-5 bg-white border rounded-2xl focus:ring-2 transition-all resize-none text-lg ${isListening ? 'border-teal-400 ring-4 ring-teal-50' : 'border-slate-300 focus:ring-teal-500'}`}
+                                            className={`w-full min-h-[120px] p-5 bg-background border rounded-2xl focus:ring-2 transition-all resize-none text-lg text-text ${isListening ? 'border-accent ring-4 ring-accent/10' : 'border-border focus:ring-accent'}`}
                                             placeholder="Type or dictate answer..."
                                         />
                                         {supported && (
@@ -538,13 +546,13 @@ export const NewSession = () => {
                                     </div>
                                 </div>
 
-                                <div className="mt-8 flex justify-between items-center border-t border-slate-100 pt-6">
+                                <div className="mt-8 flex justify-between items-center border-t border-border pt-6">
                                     <button
                                         onClick={() => {
                                             if (currentQIndex > 0) setCurrentQIndex(currentQIndex - 1);
                                             else setStep(2);
                                         }}
-                                        className="text-slate-500 hover:text-slate-800 font-medium flex items-center px-4 py-2"
+                                        className="text-text-muted hover:text-text font-medium flex items-center px-4 py-2"
                                     >
                                         <ArrowLeft className="w-5 h-5 mr-2" /> Previous Question
                                     </button>
@@ -560,55 +568,55 @@ export const NewSession = () => {
                 {/* STEP 4: DOCUMENTS */}
                 {step === 4 && (
                     <div className="flex-1 animate-in fade-in flex flex-col">
-                        <h2 className="text-xl font-bold text-slate-800 mb-2">Upload Records (Optional)</h2>
-                        <p className="text-slate-500 mb-6 border-b border-slate-100 pb-4">Attach any relevant past medical records, test results, or referrals.</p>
+                        <h2 className="text-xl font-bold text-text mb-2">Upload Records (Optional)</h2>
+                        <p className="text-text-muted mb-6 border-b border-border pb-4">Attach any relevant past medical records, test results, or referrals.</p>
 
                         <div className="flex-1">
                             <div
                                 onClick={() => fileInputRef.current?.click()}
-                                className="border-2 border-dashed border-slate-300 rounded-3xl p-12 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-50 hover:border-teal-400 transition-colors group mb-8"
+                                className="border-2 border-dashed border-border rounded-3xl p-12 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-background hover:border-accent transition-colors group mb-8"
                             >
                                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".pdf,.jpg,.png" />
-                                <div className="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <div className="w-16 h-16 bg-accent/10 text-accent rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                     <Upload className="w-8 h-8" />
                                 </div>
-                                <h3 className="text-lg font-semibold text-slate-800 mb-1">Click to upload document</h3>
-                                <p className="text-slate-500 text-sm">PDF, JPG, or PNG (max 10MB)</p>
+                                <h3 className="text-lg font-semibold text-text mb-1">Click to upload document</h3>
+                                <p className="text-text-muted text-sm">PDF, JPG, or PNG (max 10MB)</p>
                             </div>
 
                             {documents.length > 0 && (
                                 <div>
-                                    <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">Uploaded Files</h4>
+                                    <h4 className="text-sm font-semibold text-text uppercase tracking-wider mb-4">Uploaded Files</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {documents.map((doc, i) => (
-                                            <div key={i} className="flex items-start p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg mr-4">
+                                            <div key={i} className="flex items-start p-4 bg-background border border-border rounded-xl">
+                                                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg mr-4">
                                                     <FileText className="w-6 h-6" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex justify-between items-center">
-                                                        <p className="font-semibold text-slate-800 truncate flex-1" title={doc.filename}>{doc.filename}</p>
+                                                        <p className="font-semibold text-text truncate flex-1" title={doc.filename}>{doc.filename}</p>
                                                         <a
                                                             href={`/api/documents/${doc.id}/download`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-[10px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded leading-none ml-2 uppercase"
+                                                            className="text-[10px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-1.5 py-0.5 rounded leading-none ml-2 uppercase"
                                                         >
                                                             Open
                                                         </a>
                                                     </div>
-                                                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{doc.coordinator_note}</p>
+                                                    <p className="text-xs text-text-muted mt-1 line-clamp-2">{doc.coordinator_note}</p>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             )}
-                            {uploadingDoc && <div className="text-center text-teal-600 animate-pulse py-4 font-medium">Processing document with AI...</div>}
+                            {uploadingDoc && <div className="text-center text-accent animate-pulse py-4 font-medium">Processing document with AI...</div>}
                         </div>
 
-                        <div className="mt-8 flex justify-between items-center border-t border-slate-100 pt-6">
-                            <button onClick={() => setStep(3)} className="text-slate-500 hover:text-slate-800 font-medium flex items-center px-4 py-2">
+                        <div className="mt-8 flex justify-between items-center border-t border-border pt-6">
+                            <button onClick={() => setStep(3)} className="text-text-muted hover:text-text font-medium flex items-center px-4 py-2">
                                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to Q&A
                             </button>
                             <button onClick={handleGenerateSummary} disabled={geminiLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-medium flex items-center transition-all shadow-sm disabled:opacity-50">
@@ -631,7 +639,7 @@ export const NewSession = () => {
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto pr-4 space-y-8 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                        <div className="flex-1 overflow-y-auto pr-4 space-y-8 scrollbar-thin scrollbar-thumb-border">
                             {/* Chief Complaint Card */}
                             <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm group hover:border-accent/40 transition-colors">
                                 <label className="block text-[10px] font-bold text-accent uppercase tracking-[0.2em] mb-3">Chief Complaint</label>
@@ -644,13 +652,13 @@ export const NewSession = () => {
 
                             {/* Detailed History */}
                             <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm block">
-                                <label className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">
+                                <label className="flex items-center gap-2 text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-4">
                                     <FileText className="w-3.5 h-3.5" /> History of Presenting Illness
                                 </label>
                                 <textarea
                                     value={summary.history_of_presenting_illness}
                                     onChange={e => setSummary({ ...summary, history_of_presenting_illness: e.target.value })}
-                                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-border rounded-2xl text-text text-base leading-relaxed focus:ring-2 focus:ring-accent transition-all min-h-[180px] resize-none"
+                                    className="w-full px-5 py-4 bg-background border border-border rounded-2xl text-text text-base leading-relaxed focus:ring-2 focus:ring-accent transition-all min-h-[180px] resize-none"
                                 />
                             </div>
 
@@ -712,7 +720,7 @@ export const NewSession = () => {
                         <div className="mt-8 flex justify-between items-center border-t border-border pt-8">
                             <button
                                 onClick={() => setStep(4)}
-                                className="px-6 py-3 text-slate-500 hover:text-text font-bold text-sm uppercase tracking-widest flex items-center transition-colors"
+                                className="px-6 py-3 text-text-muted hover:text-text font-bold text-sm uppercase tracking-widest flex items-center transition-colors"
                             >
                                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to Records
                             </button>

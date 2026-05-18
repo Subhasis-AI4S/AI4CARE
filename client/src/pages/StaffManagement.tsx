@@ -135,8 +135,8 @@ export const StaffManagement = () => {
 
     if (user?.role !== 'doctor' && user?.role !== 'admin') {
         return (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-                <Shield className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+            <div className="p-8 text-center text-text-muted">
+                <Shield className="w-16 h-16 mx-auto mb-4 opacity-20" />
                 <p>Access Denied. Only doctors can manage staff.</p>
             </div>
         );
@@ -146,11 +146,11 @@ export const StaffManagement = () => {
         <div className="p-8 max-w-5xl mx-auto">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200 flex items-center">
-                        <Users className="w-8 h-8 mr-3 text-teal-600" />
+                    <h1 className="text-3xl font-bold text-text flex items-center">
+                        <Users className="w-8 h-8 mr-3 text-accent" />
                         Staff Management
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Manage users who can perform patient intake for your clinic.</p>
+                    <p className="text-text-muted mt-1">Manage users who can perform patient intake for your clinic.</p>
                 </div>
                 <button 
                     onClick={() => setShowAddForm(!showAddForm)}
@@ -167,9 +167,9 @@ export const StaffManagement = () => {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/50 mb-8 overflow-hidden"
+                        className="bg-surface p-6 rounded-2xl shadow-sm border border-border mb-8 overflow-hidden"
                     >
-                        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Create New Staff Account</h2>
+                        <h2 className="text-lg font-semibold text-text mb-4">Create New Staff Account</h2>
                         <form onSubmit={handleAddStaff} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <input 
                                 type="text" 
@@ -177,7 +177,7 @@ export const StaffManagement = () => {
                                 value={newFullName}
                                 onChange={(e) => setNewFullName(e.target.value)}
                                 required
-                                className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                className="px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent text-text"
                             />
                             <input 
                                 type="email" 
@@ -185,7 +185,7 @@ export const StaffManagement = () => {
                                 value={newEmail}
                                 onChange={(e) => setNewEmail(e.target.value)}
                                 required
-                                className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                className="px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent text-text"
                             />
                             <input 
                                 type="password" 
@@ -193,13 +193,13 @@ export const StaffManagement = () => {
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 required
-                                className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                className="px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent text-text"
                             />
                             <div className="md:col-span-3 flex justify-end mt-2">
                                 <button 
                                     type="submit" 
                                     disabled={isSubmitting}
-                                    className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 disabled:opacity-50 transition-all font-medium"
+                                    className="px-6 py-2 bg-text text-surface rounded-lg hover:opacity-90 disabled:opacity-50 transition-all font-medium"
                                 >
                                     {isSubmitting ? 'Creating...' : 'Create Staff Account'}
                                 </button>
@@ -209,15 +209,15 @@ export const StaffManagement = () => {
                 )}
             </AnimatePresence>
 
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/50 overflow-hidden">
+            <div className="bg-surface rounded-2xl shadow-sm border border-border overflow-hidden">
                 <table className="w-full text-left">
-                    <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/50">
+                    <thead className="bg-background border-b border-border">
                         <tr>
-                            <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Name</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Email</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Role</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">Joined</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300 text-right">Actions</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-text-muted">Name</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-text-muted">Email</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-text-muted">Role</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-text-muted">Joined</th>
+                            <th className="px-6 py-4 text-sm font-semibold text-text-muted text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -238,16 +238,16 @@ export const StaffManagement = () => {
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         transition={{ delay: idx * 0.05 }}
-                                        className="hover:bg-slate-50 dark:bg-slate-800/30 transition-colors"
+                                        className="hover:bg-background transition-colors"
                                     >
-                                        <td className="px-6 py-4 font-medium text-slate-800 dark:text-slate-200">{member.full_name}</td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{member.email}</td>
+                                        <td className="px-6 py-4 font-medium text-text">{member.full_name}</td>
+                                        <td className="px-6 py-4 text-text-muted">{member.email}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase ${member.role === 'doctor' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
+                                            <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase ${member.role === 'doctor' ? 'bg-indigo-100 text-indigo-700' : 'bg-background text-text-muted border border-border'}`}>
                                                 {member.role}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
+                                        <td className="px-6 py-4 text-text-muted text-sm">
                                             {new Date(member.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 text-right">
