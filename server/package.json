@@ -8,13 +8,15 @@
     "start": "node server.js",
     "dev": "node server.js",
     "setup:pg": "node db/setup.js && node db/setup_saas.js && node db/add_detailed_respiratory_templates.js",
-    "migrate:data": "node db/migrate_sqlite_to_pg.js"
+    "migrate:data": "node db/migrate_sqlite_to_pg.js",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@prisma/client": "^6.2.1",
     "@azure/storage-blob": "^12.31.0",
     "@google-cloud/storage": "^7.19.0",
     "@google/genai": "^1.44.0",
