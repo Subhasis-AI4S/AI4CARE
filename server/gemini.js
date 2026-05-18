@@ -169,7 +169,7 @@ STRICT GUIDELINES:
     try {
         console.log(`--- Gemini AI Question Generation: ${complaint} ---`);
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-1.5-flash',
             contents: systemPrompt
         });
         rawText = response.text || '';
@@ -275,7 +275,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
     try {
         console.log(`--- Gemini AI Summary: ${patient.name} ---`);
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-1.5-flash',
             contents: prompt
         });
         rawText = response.text || '';
@@ -309,7 +309,7 @@ const generateDocumentNote = async (filename, description, language = 'en', tena
     const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash-latest',
+            model: 'gemini-1.5-flash',
             contents: `Write a professional English clinical note for document "${filename}" with context: "${description}".`
         });
         return response.text || description;
