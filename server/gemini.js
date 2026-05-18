@@ -102,7 +102,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
 
     console.log(`[Gemini] Matched ${matchedTemplates.length} templates: ${matchedTemplates.map(t => t.name).join(', ')}`);
 
-    // COLLECT ALL questions from ALL matched templates (Combine them for more variety)
+    // COLLECT ALL questions from ALL matched templates
     const allQuestions = [];
     const seenQs = new Set();
 
@@ -128,24 +128,17 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
             console.error(`[Templates] Failure parsing questions for ${t.name}:`, e);
         }
     }
-    const templateQuestions = allQuestions;
 
-    // 2. Fall back to Gemini for enrichment or full generation
+    if (allQuestions.length > 0) {
+        console.log(`[Gemini] Using ${allQuestions.length} questions from local templates. Bypassing AI.`);
+        return allQuestions;
+    }
+
+    // 2. Fall back to Gemini ONLY if no templates matched
     const apiKey = await getApiKey(tenantId);
     if (!apiKey) {
-        let finalQs = templateQuestions;
-        // Floor of 6: If templates don't provide enough questions, fill with generic ones
-        if (finalQs.length < 5) {
-            const extra = getGenericQuestions(language);
-            const existingTexts = new Set(finalQs.map(f => f.toLowerCase()));
-            for (const ex of extra) {
-                if (!existingTexts.has(ex.toLowerCase()) && finalQs.length < 6) {
-                    finalQs.push(ex);
-                }
-            }
-        }
-        console.log(`[Gemini] No API Key. Returning ${finalQs.length} questions (Templates matched: ${templateQuestions.length}).`);
-        return finalQs;
+        console.log(`[Gemini] No API Key and no templates. Returning generic questions.`);
+        return getGenericQuestions(language);
     }
 
     const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1' });
