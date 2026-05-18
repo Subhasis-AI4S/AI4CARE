@@ -148,7 +148,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         return finalQs;
     }
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+    const ai = new GoogleGenAI(apiKey);
     const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
     const templateContext = templateQuestions.length > 0 
         ? `\nCLINICAL CONTEXT (INCLUDE THESE QUESTIONS): \n${templateQuestions.map((q, i) => `${i+1}. ${q}`).join('\n')}` 
@@ -267,7 +267,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
         };
     }
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+    const ai = new GoogleGenAI(apiKey);
     const qaText = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
     const prompt = `Write a structured English clinical summary for: ${patient.name}, ${patient.age}y. Complaint: ${complaint}. Q&A: \n${qaText}.\nFormat as JSON with: chief_complaint, history_of_presenting_illness, key_findings (array), clinical_flags (array), assessment_notes, suggested_medications, suggested_tests.`;
 
@@ -306,7 +306,7 @@ const generateDocumentNote = async (filename, description, language = 'en', tena
     const apiKey = await getApiKey(tenantId);
     if (!apiKey) return `Document: ${filename}. Context: ${description}`;
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1beta' });
+    const ai = new GoogleGenAI(apiKey);
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-1.5-flash',
