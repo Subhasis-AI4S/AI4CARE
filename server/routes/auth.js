@@ -20,6 +20,15 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ error: 'All fields are required' });
     }
 
+    if (password.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+    if (!strongPasswordRegex.test(password)) {
+        return res.status(400).json({ error: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)' });
+    }
+
     try {
         const tenantId = crypto.randomUUID();
         const userId = crypto.randomUUID();

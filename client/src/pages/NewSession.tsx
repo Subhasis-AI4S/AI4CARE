@@ -136,9 +136,9 @@ export const NewSession = () => {
             return alert('All patient fields (Name, Age, Gender, and Contact) are required');
         }
 
-        // Mobile number validation (simple regex for 10 digits as a base)
-        const phoneRegex = /^[0-9]{10}$/;
-        if (!phoneRegex.test(patient.contact.replace(/\s/g, ''))) {
+        // Mobile number validation: must be exactly 10 digits
+        const phoneDigits = patient.contact.replace(/\D/g, ''); // Extract only digits
+        if (phoneDigits.length !== 10) {
             return alert('Please enter a valid 10-digit mobile number');
         }
 
@@ -373,7 +373,17 @@ export const NewSession = () => {
                             </div>
                             <div className="col-span-2">
                                 <label className="block text-sm font-bold text-text mb-2">Contact Number <span className="text-red-500">*</span></label>
-                                <input value={patient.contact} onChange={e => setPatient({ ...patient, contact: e.target.value })} type="text" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text placeholder:text-text-muted/50" placeholder="e.g. 9876543210" />
+                                <input 
+                                    value={patient.contact} 
+                                    onChange={e => {
+                                        const cleanVal = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                        setPatient({ ...patient, contact: cleanVal });
+                                    }} 
+                                    type="tel" 
+                                    className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text placeholder:text-text-muted/50" 
+                                    placeholder="e.g. 9876543210" 
+                                />
+                                <p className="text-[10px] text-text-muted mt-1 ml-1">Must be exactly 10 digits</p>
                             </div>
 
                             <div className="col-span-2 bg-background p-6 rounded-2xl border border-dashed border-teal-200 mt-4">

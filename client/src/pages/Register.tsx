@@ -29,8 +29,14 @@ export const Register = () => {
             return setError('Passwords do not match');
         }
 
-        if (formData.password.length < 6) {
-            return setError('Password must be at least 6 characters long');
+        if (formData.password.length < 8) {
+            return setError('Password must be at least 8 characters long');
+        }
+
+        // Strong password regex: 1 upper, 1 lower, 1 digit, 1 special char
+        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+        if (!strongPasswordRegex.test(formData.password)) {
+            return setError('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)');
         }
 
         setIsSubmitting(true);

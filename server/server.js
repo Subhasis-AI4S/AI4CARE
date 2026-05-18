@@ -145,6 +145,12 @@ app.get('/api/patients', authenticateToken, async (req, res) => {
 
 app.post('/api/patients', authenticateToken, async (req, res) => {
     const { name, age, gender, contact } = req.body;
+    
+    // Server-side mobile validation (exactly 10 digits)
+    const phoneDigits = (contact || '').replace(/\D/g, '');
+    if (phoneDigits.length !== 10) {
+        return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
+    }
     try {
         const result = await db.run('INSERT INTO patients (name, age, gender, contact, tenant_id) VALUES (?, ?, ?, ?, ?)', [name, age, gender, contact, req.tenantId]);
         res.json({ id: result.lastID, name, age, gender, contact, tenant_id: req.tenantId });
