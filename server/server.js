@@ -456,7 +456,10 @@ app.put('/api/settings', authenticateToken, async (req, res) => {
     try {
         await db.run('BEGIN TRANSACTION');
 
-        for (const [key, value] of Object.entries(updates)) {
+        for (let [key, value] of Object.entries(updates)) {
+            if (key === 'gemini_api_key' && typeof value === 'string') {
+                value = value.trim();
+            }
             if (db.isPg) {
                 await db.run('INSERT INTO settings (key, value, tenant_id) VALUES (?, ?, ?) ON CONFLICT(key, tenant_id) DO UPDATE SET value=EXCLUDED.value', [key, value, req.tenantId]);
             } else {

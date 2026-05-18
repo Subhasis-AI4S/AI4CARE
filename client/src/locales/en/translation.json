@@ -52,7 +52,7 @@
       "ai_title": "AI Integration (Gemini)",
       "ai_desc": "Configure the Google Gemini API key for clinical summarization.",
       "api_key_label": "Google Gemini API Key",
-      "api_key_desc": "Your key is stored locally in the SQLite database and used only to communicate directly with Google's API.",
+      "api_key_desc": "Your key is stored securely in your clinical workspace and used only to communicate directly with Google's API.",
       "pref_title": "Preferences",
       "auto_save": "Session Auto-save",
       "auto_save_desc": "Automatically save session progress while recording patient history.",
