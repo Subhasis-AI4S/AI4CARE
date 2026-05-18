@@ -50,7 +50,13 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     const seenQs = new Set();
     for (const t of matchedTemplates) {
         try {
-            let parsedQs = JSON.parse(t.questions || '[]');
+            let rawQs = t.questions || '[]';
+            let parsedQs = [];
+            if (typeof rawQs === 'string') {
+                parsedQs = JSON.parse(rawQs);
+            } else {
+                parsedQs = rawQs; // Already an object/array
+            }
             const localizedQs = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => 
                 typeof q === 'string' ? q : (q[language] || q.en || '')
             ).filter(q => q.trim().length > 0);
@@ -64,7 +70,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         } catch (e) { console.error(`[Templates] Error parsing ${t.name}:`, e); }
     }
 
-    // IF WE HAVE TEMPLATES, USE THEM (User's specific "intelligence" requirement)
+    // IF WE HAVE TEMPLATES, USE THEM
     if (allTemplateQuestions.length > 0) {
         console.log(`[AI] Using ${allTemplateQuestions.length} questions from local templates.`);
         return allTemplateQuestions;
@@ -79,7 +85,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
         
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
+            model: "gemini-pro",
             systemInstruction: "You are a Professional Medical Intake Assistant. Your goal is to collect a focused, medically-relevant history from a patient. Response MUST be a JSON array of 5-8 strings in the requested language script."
         });
 
@@ -106,7 +112,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
+            model: "gemini-pro",
             systemInstruction: "You are a Clinical Scribe. Summarize patient encounters into professional medical English history. Output MUST be valid JSON adhering strictly to the provided schema."
         });
 
@@ -153,7 +159,7 @@ const generateDocumentNote = async (filename, description, language = 'en', tena
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
+            model: "gemini-pro",
             systemInstruction: "Translate medical record descriptions into professional clinical notes in English."
         });
 
