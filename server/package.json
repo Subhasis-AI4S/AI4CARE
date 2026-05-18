@@ -16,10 +16,10 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "^6.2.1",
     "@azure/storage-blob": "^12.31.0",
     "@google-cloud/storage": "^7.19.0",
-    "@google/genai": "^1.44.0",
+    "@google/generative-ai": "^0.24.1",
+    "@prisma/client": "^6.2.1",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.71.1",
     "cloudinary": "^2.9.0",

@@ -1,10 +1,12 @@
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const db = require('./db/database');
 
+/**
+ * getApiKey - Retrieves the Gemini API key for a specific tenant,
+ * falling back to the default clinic ID if necessary.
+ */
 const getApiKey = async (tenantId) => {
     try {
-        console.log(`[Gemini] Fetching API key for tenant: ${tenantId}`);
-        // Ensure ALL tenant_id comparisons use ::text in PostgreSQL to avoid UUID/String mismatch
         const query = db.isPg 
             ? "SELECT value FROM settings WHERE key = 'gemini_api_key' AND (tenant_id::text = ? OR tenant_id::text = 'default-clinic-id') ORDER BY CASE WHEN tenant_id::text = ? THEN 1 ELSE 2 END ASC LIMIT 1"
             : "SELECT value FROM settings WHERE key = 'gemini_api_key' AND (tenant_id = ? OR tenant_id = 'default-clinic-id') ORDER BY tenant_id DESC LIMIT 1";
@@ -13,10 +15,8 @@ const getApiKey = async (tenantId) => {
         const row = await db.get(query, params);
         
         if (row && row.value) {
-            console.log(`[Gemini] API Key found (ends with: ...${row.value.slice(-4)})`);
-            return row.value;
+            return row.value.trim();
         }
-        console.warn(`[Gemini] No API Key found for tenant id: ${tenantId}.`);
         return '';
     } catch (err) {
         console.error("[Gemini] Error fetching API key:", err.message);
@@ -24,295 +24,166 @@ const getApiKey = async (tenantId) => {
     }
 };
 
-const safetySettings = [
-    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
-];
-
-const getTemplatesContext = async (complaint, tenantId) => {
-    try {
-        const query = db.isPg 
-            ? "SELECT * FROM templates WHERE tenant_id::text = ? OR tenant_id::text = 'default-clinic-id'"
-            : "SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = 'default-clinic-id'";
-        const templates = await db.all(query, [tenantId]);
-        if (!templates || templates.length === 0) return '';
-        
-        const lowerComplaint = complaint.toLowerCase();
-        const matchedTemplates = templates.filter(t => {
-            const keywords = t.trigger_keywords ? t.trigger_keywords.split(',').map(k => k.trim().toLowerCase()) : [];
-            return keywords.some(k => lowerComplaint.includes(k));
-        });
-        
-        if (matchedTemplates.length === 0) return '';
-        
-        let context = 'Standard follow-up inspiration for related symptoms:\n';
-        matchedTemplates.forEach(t => {
-            const qs = JSON.parse(t.questions || '[]');
-            context += `- ${t.name}: ${qs.join(' ')}\n`;
-        });
-        return context;
-    } catch (err) {
-        return '';
-    }
-};
-
+/**
+ * generateQuestions - Generates follow-up clinical questions based on patient complaint.
+ * PRIORITIZES local templates over AI to ensure high reliability.
+ */
 const generateQuestions = async (complaint, language = 'en', tenantId) => {
-    // 1. Try local templates FIRST for exact clinical matches
+    // 1. MATCH LOCAL TEMPLATES
     const query = db.isPg 
         ? "SELECT * FROM templates WHERE tenant_id::text = ? OR tenant_id::text = 'default-clinic-id'"
         : "SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = 'default-clinic-id'";
     const templates = await db.all(query, [tenantId]);
     const lowerComplaint = (complaint || '').toLowerCase();
     
-    const targetTags = {
-        'en': ['(EN)', '-EN', ' EN'],
-        'bn': ['(BN)', '-BN', ' BN'],
-        'hi': ['(HI)', '-HI', ' HI']
-    };
-
-    const requestedLangTag = targetTags[language.toLowerCase()];
-    const otherLangTags = Object.keys(targetTags)
-        .filter(l => l !== language.toLowerCase())
-        .flatMap(l => targetTags[l]);
-
-    // Match Templates with Fuzzy Support for missing spaces
+    // Improved matching logic
     let matchedTemplates = templates.filter(t => {
-        const nameUpper = (t.name || '').toUpperCase();
-        if (otherLangTags.some(tag => nameUpper.includes(tag))) return false;
-        
         const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
-        
         return keywords.some(k => {
-            // Use regex for whole-word matching to avoid partial overlaps like 'ache' in 'headache'
-            // but still allow phrases like 'abdominal pain' to match 'I have abdominal pain'
-            const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex special chars
+            const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(^|\\P{L})${escapedK}(\\P{L}|$)`, 'iu');
             return regex.test(lowerComplaint);
         });
     });
 
-    // Prioritization: Sort matches (longer keyword match first or exact name match)
-    matchedTemplates.sort((a, b) => {
-        const aExact = a.name.toLowerCase() === lowerComplaint ? 1 : 0;
-        const bExact = b.name.toLowerCase() === lowerComplaint ? 1 : 0;
-        return bExact - aExact;
-    });
-
-    console.log(`[Gemini] Matched ${matchedTemplates.length} templates: ${matchedTemplates.map(t => t.name).join(', ')}`);
-
-    // COLLECT ALL questions from ALL matched templates
-    const allQuestions = [];
+    const allTemplateQuestions = [];
     const seenQs = new Set();
-
     for (const t of matchedTemplates) {
         try {
-            let rawQs = t.questions || '[]';
-            let parsedQs = [];
-            if (typeof rawQs !== 'string') parsedQs = Array.isArray(rawQs) ? rawQs : [rawQs];
-            else if (rawQs.trim().startsWith('[') || rawQs.trim().startsWith('{')) parsedQs = JSON.parse(rawQs);
-            else parsedQs = rawQs.split('\n').filter(q => q.trim().length > 0);
-            
+            let parsedQs = JSON.parse(t.questions || '[]');
             const localizedQs = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => 
-                typeof q === 'string' ? q : (q[language] || q.en || q.hi || q.bn || '')
+                typeof q === 'string' ? q : (q[language] || q.en || '')
             ).filter(q => q.trim().length > 0);
 
             for (const q of localizedQs) {
                 if (!seenQs.has(q.toLowerCase())) {
-                    allQuestions.push(q);
+                    allTemplateQuestions.push(q);
                     seenQs.add(q.toLowerCase());
                 }
             }
-        } catch (e) {
-            console.error(`[Templates] Failure parsing questions for ${t.name}:`, e);
-        }
+        } catch (e) { console.error(`[Templates] Error parsing ${t.name}:`, e); }
     }
 
-    if (allQuestions.length > 0) {
-        console.log(`[Gemini] Using ${allQuestions.length} questions from local templates. Bypassing AI.`);
-        return allQuestions;
+    // IF WE HAVE TEMPLATES, USE THEM (User's specific "intelligence" requirement)
+    if (allTemplateQuestions.length > 0) {
+        console.log(`[AI] Using ${allTemplateQuestions.length} questions from local templates.`);
+        return allTemplateQuestions;
     }
 
-    // 2. Fall back to Gemini ONLY if no templates matched
+    // 2. FALLBACK TO AI IF NO TEMPLATES
     const apiKey = await getApiKey(tenantId);
-    if (!apiKey) {
-        console.log(`[Gemini] No API Key and no templates. Returning generic questions.`);
-        return getGenericQuestions(language);
-    }
+    if (!apiKey) return getGenericQuestions(language);
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1' });
-    const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
-    const templateContext = templateQuestions.length > 0 
-        ? `\nCLINICAL CONTEXT (INCLUDE THESE QUESTIONS): \n${templateQuestions.map((q, i) => `${i+1}. ${q}`).join('\n')}` 
-        : '';
-
-    const systemPrompt = `You are a Clinical Intake Assistant. Help a physician collect a focused medical history.
-Patient Complaint: ${complaint}
-${templateContext}
-
-STRICT GUIDELINES:
-1. Generate a total of 5-8 professional, medically-relevant follow-up questions.
-2. If CLINICAL CONTEXT questions are provided above, INCLUDE THEM and add more to reach the 5-8 count.
-3. Respond ONLY in ${targetLang} (${language}) native script.
-4. Use clinical frameworks like SOCRATES/OPQRST.
-5. Return ONLY a JSON array of strings.`;
-
-    let rawText = '';
     try {
-        console.log(`--- Gemini AI Question Generation: ${complaint} ---`);
-        const response = await ai.models.generateContent({
-            model: 'gemini-pro',
-            contents: systemPrompt
-        });
-        rawText = response.text || '';
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
         
-        let jsonText = rawText.includes('[') ? rawText.substring(rawText.indexOf('['), rawText.lastIndexOf(']') + 1) : rawText;
-        const questions = JSON.parse(jsonText);
-        const finalQuestions = Array.isArray(questions) ? questions.map(q => typeof q === 'string' ? q : q.text || JSON.stringify(q)) : [];
-        console.log(`[Gemini] Generated ${finalQuestions.length} questions successfully.`);
-        return finalQuestions;
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            systemInstruction: "You are a Professional Medical Intake Assistant. Your goal is to collect a focused, medically-relevant history from a patient. Response MUST be a JSON array of 5-8 strings in the requested language script."
+        });
+
+        const prompt = `Patient complaint: "${complaint}". Language: ${targetLang}. Generate follow-up questions following SOCRATES/OPQRST framework.`;
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+        
+        const jsonText = responseText.includes('[') ? responseText.substring(responseText.indexOf('['), responseText.lastIndexOf(']') + 1) : responseText;
+        return JSON.parse(jsonText);
     } catch (e) {
-        console.error("[Gemini] API error during prompt:", e.message);
-        
-        // --- THE FIX: Maintain Template Questions on API failure ---
-        if (templateQuestions && templateQuestions.length > 0) {
-            console.log(`[Gemini] API failed. Falling back to ${templateQuestions.length} matched templates.`);
-            return templateQuestions;
-        }
-
-        console.warn("[Gemini] API failed and no templates matched. Returning generic questions.");
+        console.error("[AI] Question generation failed:", e.message);
         return getGenericQuestions(language);
     }
 };
 
-const generateQuestionsInternalFallback = async (complaint, language = 'en') => {
-    try {
-        const templates = await db.all("SELECT * FROM templates");
-        if (!templates) return getGenericQuestions(language);
-
-        const lowerComplaint = complaint.toLowerCase();
-        const matchedTemplate = templates.find(t => {
-            const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase());
-            return keywords.some(k => k && lowerComplaint.includes(k));
-        });
-        
-        if (matchedTemplate) {
-            try {
-                console.log(`Using template: ${matchedTemplate.name}`);
-                const qs = JSON.parse(matchedTemplate.questions);
-                return qs.map(q => ({ text: q, source: 'Template' }));
-            } catch (pe) {
-                console.error("Error parsing template JSON:", pe);
-            }
-        }
-
-        console.log("No specific template matched. Using generic follow-ups.");
-        return getGenericQuestions(language).map(q => ({ text: q, source: 'Generic' }));
-    } catch (err) {
-        console.error("Database error during fallback:", err);
-        return getGenericQuestions(language).map(q => ({ text: q, source: 'Generic' }));
-    }
-};
-
-const getGenericQuestions = (language) => {
-    // Generic localized follow-ups
-    const genericFallbacks = {
-        'en': [
-            "When did this symptom first start?",
-            "On a scale of 1-10, how severe is it?",
-            "What makes the symptom better or worse?",
-            "Have you experienced this before?",
-            "Are you taking any medications for this?",
-            "Are there any other associated symptoms?"
-        ],
-        'hi': [
-            "यह लक्षण पहली बार कब शुरू हुआ?",
-            "1-10 के पैमाने पर, यह कितना गंभीर है?",
-            "किस चीज़ से लक्षण बेहतर या बदतर हो जाता है?",
-            "क्या आपने पहले इसका अनुभव किया है?",
-            "क्या आप इसके लिए कोई दवा ले रहे हैं?",
-            "क्या कोई अन्य संबंधित लक्षण हैं?"
-        ],
-        'bn': [
-            "এই লক্ষণটি প্রথম কবে শুরু হয়েছিল?",
-            "১-১০ স্কেলে, এটি কতটা গুরুতর?",
-            "কী করলে এই লক্ষণটি ভালো বা খারাপ হয়?",
-            "আপনি কি আগে এটি অনুভব করেছেন?",
-            "আপনি কি এর জন্য কোনো ওষুধ খাচ্ছেন?",
-            "অন্য কোনো সংশ্লিষ্ট লক্ষণ আছে কি?"
-        ]
-    };
-    return genericFallbacks[language] || genericFallbacks['en'];
-};
-
+/**
+ * generateSummary - Creates a structured clinical summary from QA transcript and uploaded documents.
+ * USES native JSON mode for maximum reliability.
+ */
 const generateSummary = async (patient, complaint, qaPairs, documents, language = 'en', tenantId) => {
     const apiKey = await getApiKey(tenantId);
-    if (!apiKey) {
-        return {
-            chief_complaint: complaint,
-            history_of_presenting_illness: `Patient ${patient.name} presents with ${complaint}. Q&A: ${qaPairs.map(qa => `${qa.question}: ${qa.answer}`).join('; ')}`,
-            key_findings: documents.map(d => d.coordinator_note),
-            clinical_flags: ["Manual Assessment Recommended"],
-            assessment_notes: "Auto-summary fallback.",
-            suggested_medications: "Review required",
-            suggested_tests: "Review required"
-        };
-    }
+    if (!apiKey) return getManualSummaryFallback(patient, complaint, qaPairs, documents);
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1' });
-    const qaText = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
-    const prompt = `Write a structured English clinical summary for: ${patient.name}, ${patient.age}y. Complaint: ${complaint}. Q&A: \n${qaText}.\nFormat as JSON with: chief_complaint, history_of_presenting_illness, key_findings (array), clinical_flags (array), assessment_notes, suggested_medications, suggested_tests.`;
-
-    let rawText = '';
     try {
-        console.log(`--- Gemini AI Summary: ${patient.name} ---`);
-        const response = await ai.models.generateContent({
-            model: 'gemini-pro',
-            contents: prompt
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            systemInstruction: "You are a Clinical Scribe. Summarize patient encounters into professional medical English history. Output MUST be valid JSON adhering strictly to the provided schema."
         });
-        rawText = response.text || '';
-        
-        // Robust JSON Extraction
-        let jsonText = rawText.includes('{') ? rawText.substring(rawText.indexOf('{'), rawText.lastIndexOf('}') + 1) : rawText;
-        const summary = JSON.parse(jsonText);
-        console.log("[Gemini] Generated summary successfully.");
-        return summary;
+
+        const transcript = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
+        const docsContext = documents.map(d => `Document "${d.filename}": ${d.coordinator_note}`).join('\n');
+
+        const prompt = `Summarize encounter for ${patient.name} (${patient.age}y, ${patient.gender}). 
+Chief Complaint: ${complaint}
+Transcript: 
+${transcript}
+Record Findings:
+${docsContext}
+
+JSON Schema:
+{
+  "chief_complaint": "string",
+  "history_of_presenting_illness": "professional medical English prose",
+  "key_findings": ["item1", "item2"],
+  "clinical_flags": ["alert1", "alert2"],
+  "assessment_notes": "string",
+  "suggested_medications": "markdown list or string",
+  "suggested_tests": "markdown list or string"
+}`;
+
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        });
+
+        return JSON.parse(result.response.text());
     } catch (e) {
-        const manualHpi = qaPairs.length > 0 
-            ? qaPairs.map(qa => `• ${qa.question}: ${qa.answer}`).join('\n')
-            : "No follow-up questions were answered.";
-            
-        return { 
-            chief_complaint: complaint, 
-            history_of_presenting_illness: manualHpi, 
-            key_findings: documents.map(d => d.coordinator_note || d.filename).filter(n => n), 
-            clinical_flags: ["Manual Assessment Recommended"], 
-            assessment_notes: "Physician assessment and objective findings to be recorded below.", 
-            suggested_medications: "Clinical correlation required for prescription.", 
-            suggested_tests: "Routine investigations as per clinical judgment." 
-        };
+        console.error("[AI] Summary generation failed:", e.message);
+        return getManualSummaryFallback(patient, complaint, qaPairs, documents);
     }
 };
 
+/**
+ * generateDocumentNote - Creates a note for a specific medical document.
+ */
 const generateDocumentNote = async (filename, description, language = 'en', tenantId) => {
     const apiKey = await getApiKey(tenantId);
-    if (!apiKey) return `Document: ${filename}. Context: ${description}`;
+    if (!apiKey) return `Record: ${filename}. Context: ${description}`;
 
-    const ai = new GoogleGenAI({ apiKey, apiVersion: 'v1' });
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-pro',
-            contents: `Write a professional English clinical note for document "${filename}" with context: "${description}".`
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            systemInstruction: "Translate medical record descriptions into professional clinical notes in English."
         });
-        return response.text || description;
+
+        const result = await model.generateContent(`Document: "${filename}". Native Description: "${description}".`);
+        return result.response.text();
     } catch (e) {
         return `Record: ${filename}. Note: ${description}`;
     }
 };
 
-module.exports = {
-    generateQuestions,
-    generateSummary,
-    generateDocumentNote
+const getGenericQuestions = (language) => {
+    const genericFallbacks = {
+        'en': ["When did this start?", "How severe is it (1-10)?", "What makes it better/worse?", "Any other associated symptoms?", "Have you had this before?"],
+        'hi': ["यह कब शुरू हुआ?", "यह कितना गंभीर है (1-10)?", "क्या इसे कम या ज्यादा करता है?", "कोई अन्य संबंधित लक्षण?", "क्या यह पहले हुआ है?"],
+        'bn': ["এটি কখন শুরু হয়েছিল?", "এটি কতটা গুরুতর (১-১০)?", "কী করলে ভাল বা খারাপ হয়?", "অন্য কোনো লক্ষণ আছে কি?", "আগে কি এমন হয়েছে?"]
+    };
+    return genericFallbacks[language] || genericFallbacks['en'];
 };
+
+const getManualSummaryFallback = (patient, complaint, qaPairs, documents) => {
+    const hpi = qaPairs.map(qa => `• ${qa.question}: ${qa.answer}`).join('\n') || "No transcript available.";
+    return {
+        chief_complaint: complaint,
+        history_of_presenting_illness: hpi,
+        key_findings: documents.map(d => d.coordinator_note || d.filename).filter(n => n),
+        clinical_flags: ["Manual Assessment Required"],
+        assessment_notes: "AI synthesis failed. Manual history provided.",
+        suggested_medications: "ToBeVerified",
+        suggested_tests: "ToBeVerified"
+    };
+};
+
+module.exports = { generateQuestions, generateSummary, generateDocumentNote };
