@@ -568,11 +568,17 @@ app.post('/api/gemini/summary', authenticateToken, async (req, res) => {
         // 1. Mark session as processing with type-agnostic casting
         await db.run("UPDATE sessions SET status = 'processing', updated_at = CURRENT_TIMESTAMP WHERE id::text = ? AND tenant_id::text = ?", [sessionId, req.tenantId]);
 
-        // 2. Add job to queue
-        await addSummaryJob(sessionId, req.tenantId, language || 'en');
+        // 2. Add job to queue (returns actual summary if processed synchronously)
+        const jobResult = await addSummaryJob(sessionId, req.tenantId, language || 'en');
 
-        // Return a dummy summary structure so the frontend doesn't crash if it expects one, 
-        // but mark it as pending so it knows to poll.
+        if (jobResult && jobResult.status === 'completed') {
+            return res.json({
+                success: true,
+                message: 'AI summary generated successfully',
+                summary: jobResult
+            });
+        }
+
         res.json({
             success: true,
             message: 'AI summary generation started in background',

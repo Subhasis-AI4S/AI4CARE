@@ -39,13 +39,13 @@ async function addSummaryJob(sessionId, tenantId, language) {
     } else {
         console.log('Processing summary synchronously due to Redis unavailability...');
         const { processSummary } = require('../workers/aiWorker');
-        // Run in "background" via setTimeout to avoid blocking the response immediately,
-        // although it's still running on the same process.
-        setTimeout(() => {
-            processSummary({ sessionId, tenantId, language })
-                .catch(err => console.error('Synchronous summary processing failed:', err));
-        }, 0);
-        return { id: 'sync-' + Date.now() };
+        try {
+            const summary = await processSummary({ sessionId, tenantId, language });
+            return { status: 'completed', ...summary };
+        } catch (err) {
+            console.error('Synchronous summary processing failed:', err);
+            throw err;
+        }
     }
 }
 
