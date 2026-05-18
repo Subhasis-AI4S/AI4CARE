@@ -1,4 +1,6 @@
 const { Pool } = require('pg');
+const { PrismaClient } = require('@prisma/client');
+const { AsyncLocalStorage } = require('async_hooks');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const dotenv = require('dotenv');
@@ -6,7 +8,9 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 let db;
+let prisma;
 let isPg = false;
+const dbStore = new AsyncLocalStorage();
 
 // --- PostgreSQL Connection ---
 // Activated when DB_HOST (or DATABASE_URL) is set in environment
@@ -34,6 +38,13 @@ if (DATABASE_URL || DB_HOST) {
         };
 
     db = new Pool(poolConfig);
+    prisma = new PrismaClient({
+        datasources: {
+            db: {
+                url: DATABASE_URL || `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`
+            }
+        }
+    });
 
     // Connection health check on startup
     db.connect((err, client, release) => {
@@ -68,19 +79,46 @@ function convertPlaceholders(sql) {
 // --- Unified Database Interface ---
 const database = {
     isPg,
+    dbStore, // Export for middleware to use
+
+    // Helper to run code inside a session-local PG context
+    runInContext: async (client, tenantId, role, callback) => {
+        if (!isPg) return callback();
+        await client.query(`SET LOCAL app.current_tenant_id = $1`, [tenantId]);
+        await client.query(`SET LOCAL app.user_role = $2`, [role || 'staff']);
+        return callback();
+    },
 
     // Returns a single row
     get: async (sql, params = []) => {
         if (isPg) {
-            try {
-                const result = await db.query(convertPlaceholders(sql), params);
-                return result.rows[0];
-            } catch (err) {
-                if (err.code === '22P02') { // Invalid text representation (e.g. invalid UUID)
-                    console.warn(`[Database] Query failed due to invalid data type (likely malformed UUID): ${err.message}`);
-                    return null; 
+            const store = dbStore.getStore();
+            const query = convertPlaceholders(sql);
+            
+            if (store && store.tenantId) {
+                const client = await db.connect();
+                try {
+                    await client.query('BEGIN');
+                    await client.query(`SELECT set_config('app.current_tenant_id', $1, true)`, [store.tenantId]);
+                    await client.query(`SELECT set_config('app.user_role', $1, true)`, [store.role || 'staff']);
+                    const result = await client.query(query, params);
+                    await client.query('COMMIT');
+                    return result.rows[0];
+                } catch (err) {
+                    await client.query('ROLLBACK');
+                    if (err.code === '22P02') return null;
+                    throw err;
+                } finally {
+                    client.release();
                 }
-                throw err;
+            } else {
+                try {
+                    const result = await db.query(query, params);
+                    return result.rows[0];
+                } catch (err) {
+                    if (err.code === '22P02') return null;
+                    throw err;
+                }
             }
         }
         return new Promise((resolve, reject) => {
@@ -91,8 +129,28 @@ const database = {
     // Returns all rows
     all: async (sql, params = []) => {
         if (isPg) {
-            const result = await db.query(convertPlaceholders(sql), params);
-            return result.rows;
+            const store = dbStore.getStore();
+            const query = convertPlaceholders(sql);
+
+            if (store && store.tenantId) {
+                const client = await db.connect();
+                try {
+                    await client.query('BEGIN');
+                    await client.query(`SELECT set_config('app.current_tenant_id', $1, true)`, [store.tenantId]);
+                    await client.query(`SELECT set_config('app.user_role', $1, true)`, [store.role || 'staff']);
+                    const result = await client.query(query, params);
+                    await client.query('COMMIT');
+                    return result.rows;
+                } catch (err) {
+                    await client.query('ROLLBACK');
+                    throw err;
+                } finally {
+                    client.release();
+                }
+            } else {
+                const result = await db.query(query, params);
+                return result.rows;
+            }
         }
         return new Promise((resolve, reject) => {
             db.all(sql, params, (err, rows) => err ? reject(err) : resolve(rows));
@@ -102,26 +160,45 @@ const database = {
     // For INSERT / UPDATE / DELETE
     run: async (sql, params = []) => {
         if (isPg) {
+            const store = dbStore.getStore();
             let pgSql = convertPlaceholders(sql);
             const isInsert = /^\s*INSERT/i.test(sql);
             const hasReturning = /RETURNING/i.test(sql);
-
-            // Detect table name to decide if RETURNING id applies
             const tableMatch = sql.match(/INTO\s+(\w+)/i);
             const tableName = tableMatch ? tableMatch[1].toLowerCase() : '';
             const hasTextPk = TEXT_PK_TABLES.has(tableName);
 
-            // Only append RETURNING id for tables with a SERIAL integer id column
             if (isInsert && !hasReturning && !hasTextPk) {
                 pgSql += ' RETURNING id';
             }
 
-            const result = await db.query(pgSql, params);
-            return {
-                lastID: isInsert && !hasTextPk && result.rows[0] ? result.rows[0].id : null,
-                changes: result.rowCount,
-                rows: result.rows,
-            };
+            if (store && store.tenantId) {
+                const client = await db.connect();
+                try {
+                    await client.query('BEGIN');
+                    await client.query(`SELECT set_config('app.current_tenant_id', $1, true)`, [store.tenantId]);
+                    await client.query(`SELECT set_config('app.user_role', $1, true)`, [store.role || 'staff']);
+                    const result = await client.query(pgSql, params);
+                    await client.query('COMMIT');
+                    return {
+                        lastID: isInsert && !hasTextPk && result.rows[0] ? result.rows[0].id : null,
+                        changes: result.rowCount,
+                        rows: result.rows,
+                    };
+                } catch (err) {
+                    await client.query('ROLLBACK');
+                    throw err;
+                } finally {
+                    client.release();
+                }
+            } else {
+                const result = await db.query(pgSql, params);
+                return {
+                    lastID: isInsert && !hasTextPk && result.rows[0] ? result.rows[0].id : null,
+                    changes: result.rowCount,
+                    rows: result.rows,
+                };
+            }
         }
         return new Promise((resolve, reject) => {
             db.run(sql, params, function (err) {
@@ -189,7 +266,34 @@ const database = {
     query: async (sql, params = []) => {
         if (isPg) return db.query(convertPlaceholders(sql), params);
         throw new Error('db.query() is only available in PostgreSQL mode');
-    }
+    },
+
+    // Expose prisma instance
+    prisma,
+
+    // Helper to get raw PG pool (for manual client usage)
+    getPool: () => db
 };
+
+// If PG is active, extend Prisma to handle RLS context automatically via transaction wrapper
+if (isPg && prisma) {
+    database.prisma = prisma.$extends({
+        query: {
+            $allModels: {
+                async $allOperations({ args, query }) {
+                    const store = dbStore.getStore();
+                    if (store && store.tenantId) {
+                        return prisma.$transaction(async (tx) => {
+                            await tx.$executeRaw`SELECT set_config('app.current_tenant_id', ${store.tenantId}, true)`;
+                            await tx.$executeRaw`SELECT set_config('app.user_role', ${store.role || 'staff'}, true)`;
+                            return query(args);
+                        });
+                    }
+                    return query(args);
+                },
+            },
+        },
+    });
+}
 
 module.exports = database;

@@ -22,7 +22,11 @@ const authenticateToken = (req, res, next) => {
     req.userId = decoded.userId;
     req.tenantId = decoded.tenantId;
     
-    next();
+    // Wrap subsequent execution in the database store context for RLS
+    const { dbStore } = require('../db/database');
+    dbStore.run({ tenantId: decoded.tenantId, role: decoded.role || 'staff' }, () => {
+        next();
+    });
 };
 
 const requireSuperAdmin = (req, res, next) => {

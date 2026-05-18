@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  name       String
+  age        Int
+  gender     String?
+  contact    String?
+  tenantId   String?   @map("tenant_id")
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  
+  sessions   Session[]
+
+  @@map("patients")
+}
+
+model Session {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  patientId  String?   @map("patient_id")
+  complaint  String?
+  status     String?   @default("in_progress")
+  tenantId   String?   @map("tenant_id")
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt  DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+  
+  patient    Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  qaPairs    QaPair[]
+  documents  Document[]
+  summaries  Summary[]
+
+  @@map("sessions")
+}
+
+model QaPair {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  sessionId  String?  @map("session_id")
+  question   String?
+  answer     String?
+  orderIndex Int?     @map("order_index")
+  tenantId   String?  @map("tenant_id")
+  
+  session    Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("qa_pairs")
+}
+
+model Document {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  sessionId       String?   @map("session_id")
+  filename        String?
+  filePath        String?   @map("file_path")
+  coordinatorNote String?   @map("coordinator_note")
+  tenantId        String?   @map("tenant_id")
+  uploadedAt      DateTime? @default(now()) @map("uploaded_at") @db.Timestamp(6)
+  
+  session         Session?  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model Summary {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  sessionId                String?   @map("session_id")
+  chiefComplaint           String?   @map("chief_complaint")
+  historyOfPresentingIllness String? @map("history_of_presenting_illness")
+  keyFindings              String?   @map("key_findings")
+  clinicalFlags            String?   @map("clinical_flags")
+  assessmentNotes          String?   @map("assessment_notes")
+  suggestedMedications     String?   @map("suggested_medications")
+  suggestedTests           String?   @map("suggested_tests")
+  tenantId                 String?   @map("tenant_id")
+  generatedAt              DateTime? @default(now()) @map("generated_at") @db.Timestamp(6)
+  editedByCoordinator      Boolean?  @default(false) @map("edited_by_coordinator")
+  updatedAt                DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+  
+  session                  Session?  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("summaries")
+}
+
+model Template {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  name            String
+  triggerKeywords String?   @map("trigger_keywords")
+  questions       String?
+  tenantId        String?   @map("tenant_id")
+  createdAt       DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("templates")
+}
+
+model Tenant {
+  id        String    @id @db.Text
+  name      String
+  status    String?   @default("active")
+  plan      String?   @default("basic")
+  createdAt DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("tenants")
+}
+
+model User {
+  id           String    @id @db.Text
+  tenantId     String    @map("tenant_id")
+  email        String
+  passwordHash String    @map("password_hash")
+  fullName     String?   @map("full_name")
+  role         String?   @default("staff")
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+
+  @@map("users")
+}
+
+model Setting {
+  key      String
+  value    String?
+  tenantId String  @default("default-clinic-id") @map("tenant_id")
+
+  @@id([key, tenantId])
+  @@map("settings")
+}
