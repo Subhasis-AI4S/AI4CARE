@@ -356,24 +356,24 @@ export const NewSession = () => {
                         <h2 className="text-xl font-bold text-text mb-6 border-b border-border pb-4">Patient Details</h2>
                         <div className="grid grid-cols-2 gap-6">
                             <div className="col-span-2">
-                                <label className="block text-sm font-medium text-text mb-2">Full Name <span className="text-red-500">*</span></label>
-                                <input value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })} type="text" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text" placeholder="e.g. John Doe" />
+                                <label className="block text-sm font-bold text-text mb-2">Full Name <span className="text-red-500">*</span></label>
+                                <input value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })} type="text" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text placeholder:text-text-muted/50" placeholder="e.g. John Doe" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-text mb-2">Age <span className="text-red-500">*</span></label>
-                                <input value={patient.age} onChange={e => setPatient({ ...patient, age: e.target.value })} type="number" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text" placeholder="e.g. 45" />
+                                <label className="block text-sm font-bold text-text mb-2">Age <span className="text-red-500">*</span></label>
+                                <input value={patient.age} onChange={e => setPatient({ ...patient, age: e.target.value })} type="number" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text placeholder:text-text-muted/50" placeholder="e.g. 45" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-text mb-2">Gender <span className="text-red-500">*</span></label>
+                                <label className="block text-sm font-bold text-text mb-2">Gender <span className="text-red-500">*</span></label>
                                 <select value={patient.gender} onChange={e => setPatient({ ...patient, gender: e.target.value })} className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text">
-                                    <option>Male</option>
-                                    <option>Female</option>
-                                    <option>Other</option>
+                                    <option className="bg-surface text-text">Male</option>
+                                    <option className="bg-surface text-text">Female</option>
+                                    <option className="bg-surface text-text">Other</option>
                                 </select>
                             </div>
                             <div className="col-span-2">
-                                <label className="block text-sm font-medium text-text mb-2">Contact Number <span className="text-red-500">*</span></label>
-                                <input value={patient.contact} onChange={e => setPatient({ ...patient, contact: e.target.value })} type="text" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text" placeholder="e.g. 9876543210" />
+                                <label className="block text-sm font-bold text-text mb-2">Contact Number <span className="text-red-500">*</span></label>
+                                <input value={patient.contact} onChange={e => setPatient({ ...patient, contact: e.target.value })} type="text" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text placeholder:text-text-muted/50" placeholder="e.g. 9876543210" />
                             </div>
 
                             <div className="col-span-2 bg-background p-6 rounded-2xl border border-dashed border-teal-200 mt-4">
