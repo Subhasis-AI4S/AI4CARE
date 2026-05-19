@@ -298,12 +298,12 @@ export const NewSession = () => {
     // --- Renderers ---
     const renderStepTracker = () => {
         return (
-            <div className="hidden md:flex justify-between items-center mb-10 bg-surface p-5 rounded-2xl border border-border shadow-sm transition-all duration-500">
+            <div className="hidden md:flex justify-between items-center mb-10 bg-surface/50 dark:bg-slate-900/30 backdrop-blur-md p-5 rounded-2xl border border-border shadow-sm transition-all duration-500">
                 {steps.map((s, i) => (
                     <div key={s.id} className="flex items-center flex-1 last:flex-initial">
                         <div className="flex flex-col items-center gap-2.5 flex-1 group">
                             <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold transition-all duration-500 ${step >= s.id
-                                    ? 'bg-accent text-white shadow-[0_0_15px_rgba(13,148,136,0.4)]'
+                                     ? 'bg-gradient-primary text-white shadow-lg'
                                     : 'bg-background text-text-muted border border-border'
                                 }`}>
                                 {step > s.id ? <CheckCircle2 className="w-5 h-5 animate-in zoom-in duration-300" /> : s.id}
@@ -314,7 +314,7 @@ export const NewSession = () => {
                             </span>
                         </div>
                         {i < steps.length - 1 && (
-                            <div className={`h-[2px] w-full mx-4 rounded-full transition-all duration-700 ${step > s.id ? 'bg-accent shadow-[0_0_10px_rgba(13,148,136,0.3)]' : 'bg-background'
+                            <div className={`h-[2px] w-full mx-4 rounded-full transition-all duration-700 ${step > s.id ? 'bg-gradient-primary shadow-sm' : 'bg-background'
                                 }`} />
                         )}
                     </div>
@@ -411,7 +411,7 @@ export const NewSession = () => {
                             </div>
                         </div>
                         <div className="mt-8 flex justify-end">
-                            <button onClick={handlePatientSubmit} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-medium flex items-center transition-all shadow-sm">
+                            <button onClick={handlePatientSubmit} className="btn-gradient px-8 py-3 rounded-xl font-bold flex items-center transition-all shadow-lg active:scale-95">
                                 {t('common.next')} <ArrowRight className="w-5 h-5 ml-2" />
                             </button>
                         </div>
@@ -475,10 +475,10 @@ export const NewSession = () => {
                         </div>
 
                         <div className="mt-8 flex justify-between items-center border-t border-border pt-6">
-                            <button onClick={() => setStep(1)} className="text-text-muted hover:text-text font-medium flex items-center px-4 py-2">
+                            <button onClick={() => setStep(1)} className="text-text-muted hover:text-text font-medium flex items-center px-4 py-2 hover-lift">
                                 <ArrowLeft className="w-5 h-5 mr-2" /> {t('common.back')}
                             </button>
-                            <button onClick={handleComplaintSubmit} disabled={geminiLoading} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-xl font-medium flex items-center transition-all shadow-sm disabled:opacity-50">
+                            <button onClick={handleComplaintSubmit} disabled={geminiLoading} className="btn-gradient px-8 py-3 rounded-xl font-bold flex items-center transition-all shadow-lg disabled:opacity-50 active:scale-95">
                                 {geminiLoading ? t('common.loading') : <>{t('common.next')}: {t('new_session_flow.step_3')} <Sparkles className="w-5 h-5 ml-2" /></>}
                             </button>
                         </div>
@@ -562,11 +562,11 @@ export const NewSession = () => {
                                             if (currentQIndex > 0) setCurrentQIndex(currentQIndex - 1);
                                             else setStep(2);
                                         }}
-                                        className="text-text-muted hover:text-text font-medium flex items-center px-4 py-2"
+                                        className="text-text-muted hover:text-text font-medium flex items-center px-4 py-2 hover-lift"
                                     >
                                         <ArrowLeft className="w-5 h-5 mr-2" /> Previous Question
                                     </button>
-                                    <button onClick={handleAnswerSubmit} className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-xl font-medium flex items-center transition-all shadow-sm">
+                                    <button onClick={handleAnswerSubmit} className="btn-gradient px-8 py-3 rounded-xl font-bold flex items-center transition-all shadow-lg active:scale-95">
                                         {currentQIndex < aiQuestions.length - 1 ? 'Next Question' : 'Finish Q&A'} <ArrowRight className="w-5 h-5 ml-2" />
                                     </button>
                                 </div>
@@ -626,10 +626,10 @@ export const NewSession = () => {
                         </div>
 
                         <div className="mt-8 flex justify-between items-center border-t border-border pt-6">
-                            <button onClick={() => setStep(3)} className="text-text-muted hover:text-text font-medium flex items-center px-4 py-2">
+                            <button onClick={() => setStep(3)} className="text-text-muted hover:text-text font-medium flex items-center px-4 py-2 hover-lift">
                                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to Q&A
                             </button>
-                            <button onClick={handleGenerateSummary} disabled={geminiLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-medium flex items-center transition-all shadow-sm disabled:opacity-50">
+                            <button onClick={handleGenerateSummary} disabled={geminiLoading} className="btn-gradient px-8 py-3 rounded-xl font-bold flex items-center transition-all shadow-lg disabled:opacity-50 active:scale-95">
                                 {geminiLoading ? 'Generating...' : <>Generate Summary <Sparkles className="w-5 h-5 ml-2" /></>}
                             </button>
                         </div>

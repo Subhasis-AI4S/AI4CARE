@@ -29,6 +29,10 @@
   --text: #334155;       /* slate-700 */
   --text-muted: #64748b; /* slate-500 */
   --border: #e2e8f0;     /* slate-200 */
+
+  --gradient-primary: linear-gradient(135deg, #0d9488 0%, #0ea5e9 100%);
+  --gradient-hover: linear-gradient(135deg, #0f766e 0%, #0284c7 100%);
+  --gradient-glow: 0 0 15px rgba(13, 148, 136, 0.3);
 }
 
 .dark {
@@ -44,6 +48,10 @@
   --text: #f8fafc;       /* slate-50 */
   --text-muted: #cbd5e1; /* slate-300 (was 400) */
   --border: #334155;     /* slate-700 */
+
+  --gradient-primary: linear-gradient(135deg, #2dd4bf 0%, #38bdf8 100%);
+  --gradient-hover: linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%);
+  --gradient-glow: 0 0 20px rgba(45, 212, 191, 0.2);
 }
 
 @theme {
@@ -84,8 +92,26 @@ input::placeholder, textarea::placeholder {
 
 
 /* Custom Gradients */
+.bg-gradient-primary {
+  background: var(--gradient-primary);
+}
+
 .bg-gradient-header {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  background: var(--gradient-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-gradient {
+  background: var(--gradient-primary);
+  color: white !important;
+  box-shadow: var(--gradient-glow);
+  transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+  background: var(--gradient-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .glass {
@@ -96,10 +122,10 @@ input::placeholder, textarea::placeholder {
 }
 
 .glass-dark {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .transition-premium {

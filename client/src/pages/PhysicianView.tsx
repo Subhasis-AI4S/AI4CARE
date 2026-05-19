@@ -150,14 +150,14 @@ export const PhysicianView = () => {
                 </div>
 
                 {/* Patient Block */}
-                <div className="bg-background border border-border p-6 rounded-lg mb-8 flex justify-between items-center print:border-2 print:border-text print:bg-white">
+                <div className="bg-slate-50/50 dark:bg-slate-900/30 backdrop-blur-md border border-border p-8 rounded-2xl mb-8 flex justify-between items-center print:border-2 print:border-text print:bg-white shadow-sm">
                     <div>
-                        <p className="text-sm text-text-muted uppercase tracking-widest font-bold mb-1">PATIENT NAME</p>
-                        <p className="text-2xl font-bold text-text">{session.name}</p>
+                        <p className="text-[10px] text-text-muted uppercase tracking-[0.2em] font-bold mb-2">PATIENT NAME</p>
+                        <p className="text-3xl font-bold text-text">{session.name}</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm text-text-muted uppercase tracking-widest font-bold mb-1">DETAILS</p>
-                        <p className="text-xl text-text">{session.age} yrs • {session.gender || 'Unknown'}</p>
+                        <p className="text-[10px] text-text-muted uppercase tracking-[0.2em] font-bold mb-2">DETAILS</p>
+                        <p className="text-xl font-bold text-text">{session.age} yrs • {session.gender || 'Unknown'}</p>
                     </div>
                 </div>
 
@@ -283,7 +283,7 @@ export const PhysicianView = () => {
                             <button
                                 onClick={handleSaveRecommendations}
                                 disabled={saving}
-                                className="bg-slate-900 dark:bg-teal-600 hover:bg-slate-800 dark:hover:bg-teal-700 text-white px-12 py-4 rounded-xl font-bold transition-all shadow-xl active:scale-[0.98] disabled:opacity-50 flex items-center gap-3"
+                                className="btn-gradient px-12 py-4 rounded-2xl font-bold transition-all shadow-xl shadow-teal-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-3"
                             >
                                 {saving ? (
                                     <>

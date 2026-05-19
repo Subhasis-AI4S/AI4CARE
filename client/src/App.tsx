@@ -89,13 +89,13 @@ const Sidebar = () => {
               <li key={item.name}>
                 <Link
                   to={item.path}
-                  className={`flex items-center px-4 py-3 rounded-xl transition-all ${
+                  className={`flex items-center px-4 py-3 rounded-xl transition-all hover-lift ${
                     isActive
-                      ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 font-semibold shadow-sm border border-teal-100 dark:border-teal-800/50'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800/50 hover:text-slate-900 dark:text-slate-100'
+                      ? 'bg-gradient-primary text-white font-semibold shadow-lg'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400'}`} />
+                  <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                   {item.name}
                 </Link>
               </li>
@@ -103,9 +103,9 @@ const Sidebar = () => {
           })}
         </ul>
       </div>
-      <div className="p-4 border-t border-slate-200 dark:border-slate-700/50">
+      <div className="p-4 border-t border-border bg-slate-50/50 dark:bg-slate-900/20 backdrop-blur-sm">
         <div className="flex items-center gap-3 mb-4 px-2 overflow-hidden">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold border border-teal-200 shadow-sm shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold shadow-md shrink-0">
                 {user?.fullName?.charAt(0) || 'D'}
             </div>
             <div className="overflow-hidden min-w-0">
@@ -116,14 +116,14 @@ const Sidebar = () => {
         <div className="flex gap-2">
           <button 
             onClick={toggleTheme}
-            className="flex-1 flex justify-center items-center py-3 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-medium border border-transparent"
+            className="flex-1 flex justify-center items-center py-3 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-medium border border-border"
             title="Toggle Dark Mode"
           >
             {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
           </button>
           <button 
             onClick={handleLogout}
-            className="flex-[3] flex justify-center items-center py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-all font-medium border border-transparent"
+            className="flex-[3] flex justify-center items-center py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-all font-medium border border-red-100 dark:border-red-900/30"
             title="Logout"
           >
             <LogOut className="w-4 h-4 mr-2" />

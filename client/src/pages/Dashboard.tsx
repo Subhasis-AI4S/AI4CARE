@@ -142,8 +142,8 @@ export const Dashboard = () => {
                         </button>
                     </div>
                 </div>
-                <Link to="/session/new" className="bg-surface text-primary px-6 py-3 rounded-xl font-bold shadow-sm hover:bg-background transition-all flex items-center group w-full md:w-auto justify-center border border-border">
-                    <Activity className="w-5 h-5 mr-2 text-teal-600 group-hover:scale-110 transition-transform" />
+                <Link to="/session/new" className="btn-gradient px-8 py-3 rounded-xl font-bold shadow-lg flex items-center group w-full md:w-auto justify-center active:scale-95">
+                    <Activity className="w-5 h-5 mr-3 text-white transition-transform group-hover:rotate-12" />
                     {t('new_session')}
                 </Link>
             </div>
@@ -291,12 +291,13 @@ export const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const MetricCard = ({ title, value, icon, bg, trend }: any) => {
-    // Basic conversion for bg classes in dark mode
-    const darkBg = bg.replace('50', '900/20');
     return (
-        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-border flex items-center h-full hover:shadow-md transition-all hover:-translate-y-1">
-            <div className={`p-4 rounded-2xl mr-5 flex flex-shrink-0 ${bg} dark:${darkBg}`}>
-                {icon}
+        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-border flex items-center h-full hover-lift">
+            <div className={`p-4 rounded-2xl mr-5 flex flex-shrink-0 bg-gradient-primary shadow-lg`}>
+                <div className="text-white">
+                    {icon && typeof icon === 'object' ? { ...icon, props: { ...icon.props, className: 'text-white w-6 h-6' } } : icon}
+                    {/* If passing Lucide icon, it needs to be text-white */}
+                </div>
             </div>
             <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1 truncate">{title}</p>
