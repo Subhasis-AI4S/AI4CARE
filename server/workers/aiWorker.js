@@ -40,6 +40,7 @@ const processSummary = async (data) => {
         await db.run("UPDATE sessions SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE id::text = ? AND tenant_id::text = ?", [sessionId, tenantId]);
         
         console.log(`Successfully completed AI summary for session ${sessionId}`);
+        return summary;
     } catch (err) {
         console.error(`AI Worker error for session ${sessionId}:`, err);
         throw err;

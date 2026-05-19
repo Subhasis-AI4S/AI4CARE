@@ -158,7 +158,7 @@ ${docsContext}
 JSON Schema:
 {
   "chief_complaint": "string",
-  "history_of_presenting_illness": "professional medical English prose synthesized from the transcript",
+  "history_of_complaint": "professional medical English prose synthesized from the transcript",
   "key_findings": ["item1", "item2"],
   "clinical_flags": ["alert1", "alert2"],
   "assessment_notes": "clinical assessment based on analysis",

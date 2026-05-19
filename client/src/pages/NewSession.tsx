@@ -270,6 +270,18 @@ export const NewSession = () => {
     const handleGenerateSummary = async () => {
         try {
             const sumData = await generateSummary(sessionId!, interviewLanguage);
+            
+            // Re-sync QA to ensure transcript is visible even if state was lost
+            if (!fetchWithCsrf) return;
+            const qaRes = await fetchWithCsrf(`/api/sessions/${sessionId}`);
+            if (qaRes.ok) {
+                const qaData = await qaRes.json();
+                if (qaData.qa) {
+                    setAiQuestions(qaData.qa.map((q: any) => q.question));
+                    setAnswers(qaData.qa.map((q: any) => q.answer));
+                }
+            }
+
             setSummary(sumData);
             setStep(5);
         } catch (err) {
@@ -672,11 +684,11 @@ export const NewSession = () => {
                             {/* Detailed History */}
                             <div className="bg-surface p-6 rounded-3xl border border-border shadow-sm block">
                                 <label className="flex items-center gap-2 text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-4">
-                                    <FileText className="w-3.5 h-3.5" /> History of Presenting Illness
+                                    <FileText className="w-3.5 h-3.5" /> History of Complaint
                                 </label>
                                 <textarea
-                                    value={summary.history_of_presenting_illness}
-                                    onChange={e => setSummary({ ...summary, history_of_presenting_illness: e.target.value })}
+                                    value={summary.history_of_complaint}
+                                    onChange={e => setSummary({ ...summary, history_of_complaint: e.target.value })}
                                     className="w-full px-5 py-4 bg-background border border-border rounded-2xl text-text text-base leading-relaxed focus:ring-2 focus:ring-accent transition-all min-h-[180px] resize-none"
                                 />
                             </div>
