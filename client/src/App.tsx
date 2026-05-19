@@ -12,6 +12,7 @@ import {
   Moon, 
   Sun, 
   Stethoscope,
+  Loader2,
   ShieldCheck
 } from 'lucide-react';
 import { useAppContext, AppProvider } from './context/AppContext';
