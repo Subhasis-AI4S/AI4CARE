@@ -290,7 +290,7 @@ export const StatusBadge = ({ status }: { status: string }) => {
     }
 };
 
-const MetricCard = ({ title, value, icon, bg, trend }: any) => {
+const MetricCard = ({ title, value, icon, trend }: any) => {
     return (
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-border flex items-center h-full hover-lift">
             <div className={`p-4 rounded-2xl mr-5 flex flex-shrink-0 bg-gradient-primary shadow-lg`}>
