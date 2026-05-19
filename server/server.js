@@ -152,6 +152,12 @@ app.post('/api/patients', authenticateToken, async (req, res) => {
         return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
     }
     try {
+        // Idempotency check: find existing patient by contact and tenant
+        const existing = await db.get('SELECT id FROM patients WHERE contact = ? AND tenant_id = ?', [contact, req.tenantId]);
+        if (existing) {
+            return res.json({ id: existing.id, name, age, gender, contact, tenant_id: req.tenantId, reused: true });
+        }
+
         const result = await db.run('INSERT INTO patients (name, age, gender, contact, tenant_id) VALUES (?, ?, ?, ?, ?)', [name, age, gender, contact, req.tenantId]);
         res.json({ id: result.lastID, name, age, gender, contact, tenant_id: req.tenantId });
     } catch (err) {

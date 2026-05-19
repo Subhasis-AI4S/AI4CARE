@@ -14,6 +14,7 @@ const authenticateToken = (req, res, next) => {
 
     const decoded = verifyToken(token);
     if (!decoded) {
+        console.error(`[Auth] Verification failed. Token present: ${!!token}`);
         return res.status(403).json({ error: 'Invalid or expired token.' });
     }
 

@@ -132,6 +132,12 @@ export const NewSession = () => {
     // --- Actions ---
 
     const handlePatientSubmit = async () => {
+        // If session already exists, just move to next step
+        if (sessionId) {
+            setStep(2);
+            return;
+        }
+
         if (!patient.name || !patient.age || !patient.gender || !patient.contact) {
             return alert('All patient fields (Name, Age, Gender, and Contact) are required');
         }
