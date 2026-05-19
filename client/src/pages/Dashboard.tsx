@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { format, subDays, isSameDay, parseISO, isValid } from 'date-fns';
-import { Activity, CheckCircle, Clock, AlertTriangle, User, Copy } from 'lucide-react';
+import { Activity, CheckCircle, Clock, AlertTriangle, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { toast } from 'react-hot-toast';
+
 import { useAppContext } from '../context/AppContext';
 
 const safeFormatDate = (dateStr: string | null | undefined, formatStr: string = 'MMM dd, yyyy') => {
@@ -32,7 +32,7 @@ const safeIsSameDay = (dateStr: string | null | undefined, compareDate: Date) =>
 
 export const Dashboard = () => {
     const { t } = useTranslation();
-    const { logout, doctorName, clinicName, user, fetchWithCsrf } = useAppContext();
+    const { logout, doctorName, user, fetchWithCsrf } = useAppContext();
     const [sessions, setSessions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
