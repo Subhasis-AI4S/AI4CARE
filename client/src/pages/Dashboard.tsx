@@ -124,7 +124,14 @@ export const Dashboard = () => {
                     <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-tight mb-1">
                         Welcome, <span className="text-secondary">Dr. {doctorName}</span>
                     </h1>
-                    <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest opacity-60">AI4CARE Intelligence Suite</p>
+                    <div className="flex items-center gap-3">
+                        <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest opacity-60">AI4CARE Intelligence Suite</p>
+                        <div className="h-4 w-[1px] bg-white/10 hidden sm:block" />
+                        <div className="flex items-center bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">
+                            <span className="text-[9px] font-black opacity-40 uppercase tracking-tighter mr-1.5">Node:</span>
+                            <code className="text-[10px] font-mono font-bold text-secondary">{user?.tenantId}</code>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="relative z-10 flex items-center gap-4 mt-4 md:mt-0">

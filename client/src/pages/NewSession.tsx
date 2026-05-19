@@ -298,23 +298,23 @@ export const NewSession = () => {
     // --- Renderers ---
     const renderStepTracker = () => {
         return (
-            <div className="hidden md:flex justify-between items-center mb-8 bg-slate-900/5 dark:bg-slate-900/30 backdrop-blur-xl p-5 rounded-[1.5rem] border border-border/50 shadow-lg transition-premium relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+            <div className="flex justify-between items-center mb-8 bg-slate-900/5 dark:bg-slate-900/40 backdrop-blur-xl p-3 md:p-5 rounded-2xl md:rounded-[1.5rem] border border-border/50 shadow-lg transition-premium relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-32 h-32 bg-secondary/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
                 {steps.map((s, i) => (
-                    <div key={s.id} className="flex items-center flex-1 last:flex-initial relative z-10">
-                        <div className="flex flex-col items-center gap-3 flex-1 group">
-                            <div className={`w-12 h-12 rounded-[1.2rem] flex items-center justify-center font-black transition-premium ${step >= s.id
-                                     ? 'bg-gradient-primary text-white shadow-[0_10px_20px_rgba(16,185,129,0.3)]'
+                    <div key={s.id} className="flex items-center flex-1 last:flex-initial relative z-10 group">
+                        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 flex-1">
+                            <div className={`w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-[1.2rem] flex items-center justify-center font-black transition-premium text-[10px] md:text-base ${step >= s.id
+                                     ? 'bg-gradient-primary text-white shadow-lg'
                                     : 'bg-surface text-text-muted border border-border shadow-sm'
                                 }`}>
-                                {step > s.id ? <CheckCircle2 className="w-6 h-6 animate-in zoom-in duration-500" /> : <span className="opacity-80">{s.id}</span>}
+                                {step > s.id ? <CheckCircle2 className="w-4 h-4 md:w-6 md:h-6 animate-in zoom-in duration-500" /> : <span className="opacity-80">{s.id}</span>}
                             </div>
-                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-premium ${step >= s.id ? 'text-accent' : 'text-text-muted opacity-60'}`}>
-                                {s.label}
+                            <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest md:tracking-[0.2em] transition-premium ${step >= s.id ? 'text-accent' : 'text-text-muted opacity-60'}`}>
+                                <span className={step === s.id ? 'block' : 'hidden md:block'}>{s.label}</span>
                             </span>
                         </div>
                         {i < steps.length - 1 && (
-                            <div className={`h-[3px] w-full mx-6 rounded-full transition-premium ${step > s.id ? 'bg-gradient-primary shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-border/30'}`} />
+                            <div className={`h-[2px] md:h-[3px] flex-1 mx-2 md:mx-6 rounded-full transition-premium ${step > s.id ? 'bg-gradient-primary shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-border/30'}`} />
                         )}
                     </div>
                 ))}
