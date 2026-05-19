@@ -146,7 +146,15 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
         const transcript = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
         const docsContext = documents.map(d => `Document "${d.filename}": ${d.coordinator_note}`).join('\n');
 
-        const prompt = `Summarize encounter for ${patient.name} (${patient.age}y, ${patient.gender}). 
+        const prompt = `You are a Clinical Associate analyzing an encounter for ${patient.name} (${patient.age}y, ${patient.gender}).
+Based on the transcript and record findings provided below, synthesize a high-quality clinical note.
+
+CRITICAL REQUIREMENTS:
+- Use the Q&A transcript to build the 'history_of_presenting_illness'.
+- Analyze the complaint and transcript to suggest 2-3 most relevant medications AND 2-3 diagnostic tests.
+- DO NOT leave suggested_medications/suggested_tests empty if the case warrants them.
+- Output MUST be valid JSON in the specified schema.
+
 Chief Complaint: ${complaint}
 Transcript: 
 ${transcript}
@@ -156,12 +164,12 @@ ${docsContext}
 JSON Schema:
 {
   "chief_complaint": "string",
-  "history_of_presenting_illness": "professional medical English prose",
+  "history_of_presenting_illness": "professional medical English prose synthesized from the transcript",
   "key_findings": ["item1", "item2"],
   "clinical_flags": ["alert1", "alert2"],
-  "assessment_notes": "string",
-  "suggested_medications": "markdown list or string",
-  "suggested_tests": "markdown list or string"
+  "assessment_notes": "clinical assessment based on analysis",
+  "suggested_medications": "markdown list of 2-3 suggested medications",
+  "suggested_tests": "markdown list of 2-3 suggested diagnostic tests"
 }`;
 
         const result = await model.generateContent({
