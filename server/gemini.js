@@ -112,7 +112,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
         
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-pro",
+            model: "gemini-1.5-flash",
             systemInstruction: "You are a Professional Medical Intake Assistant. Your goal is to collect a focused, medically-relevant history from a patient. Response MUST be a JSON array of 5-8 strings in the requested language script."
         });
 
@@ -139,7 +139,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-pro",
+            model: "gemini-1.5-flash",
             systemInstruction: "You are a Clinical Scribe. Summarize patient encounters into professional medical English history. Output MUST be valid JSON adhering strictly to the provided schema."
         });
 
