@@ -298,7 +298,7 @@ export const NewSession = () => {
     // --- Renderers ---
     const renderStepTracker = () => {
         return (
-            <div className="hidden md:flex justify-between items-center mb-12 bg-slate-900/5 dark:bg-slate-900/30 backdrop-blur-xl p-6 rounded-[2rem] border border-border/50 shadow-2xl transition-premium relative overflow-hidden">
+            <div className="hidden md:flex justify-between items-center mb-8 bg-slate-900/5 dark:bg-slate-900/30 backdrop-blur-xl p-5 rounded-[1.5rem] border border-border/50 shadow-lg transition-premium relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
                 {steps.map((s, i) => (
                     <div key={s.id} className="flex items-center flex-1 last:flex-initial relative z-10">
@@ -343,12 +343,12 @@ export const NewSession = () => {
     }
 
     return (
-        <div className="p-4 md:p-10 max-w-6xl mx-auto h-full flex flex-col space-y-6">
+        <div className="p-4 md:p-8 md:pt-12 max-w-5xl mx-auto h-full flex flex-col space-y-6">
             <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-lg shadow-accent/20">
-                    <Sparkles className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
+                    <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="text-4xl font-black tracking-tight text-text">{t('new_session')}</h1>
+                <h1 className="text-3xl font-black tracking-tight text-text">{t('new_session')}</h1>
             </div>
             {renderStepTracker()}
 
