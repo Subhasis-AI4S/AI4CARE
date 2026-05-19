@@ -79,7 +79,7 @@ export const PhysicianView = () => {
     
     if (!data || !data.session) return (
         <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-center bg-surface p-8 rounded-2xl shadow-sm border border-border">
+            <div className="text-center glass-card p-8 rounded-2xl border border-white/5">
                 <AlertTriangle className="w-12 h-12 text-danger mx-auto mb-4" />
                 <h1 className="text-xl font-bold text-text mb-2">Session Not Found</h1>
                 <p className="text-text-muted mb-6">The requested medical session could not be found or you do not have permission to view it.</p>
@@ -150,7 +150,7 @@ export const PhysicianView = () => {
                 </div>
 
                 {/* Patient Block */}
-                <div className="bg-slate-50/50 dark:bg-slate-900/30 backdrop-blur-md border border-border p-8 rounded-2xl mb-8 flex justify-between items-center print:border-2 print:border-text print:bg-white shadow-sm">
+                <div className="glass-card border border-white/5 p-8 rounded-2xl mb-8 flex justify-between items-center print:border-2 print:border-text print:bg-white">
                     <div>
                         <p className="text-[10px] text-text-muted uppercase tracking-[0.2em] font-bold mb-2">PATIENT NAME</p>
                         <p className="text-3xl font-bold text-text">{session.name}</p>
@@ -163,7 +163,7 @@ export const PhysicianView = () => {
 
                 {/* Critical Flags */}
                 {flags && flags.length > 0 && flags.some((f:string) => f.trim()) && (
-                    <div className="bg-surface border-2 border-danger p-6 rounded-lg mb-8 shadow-sm">
+                    <div className="glass-card border-2 border-danger p-6 rounded-lg mb-8 shadow-sm">
                         <h2 className="text-danger font-bold text-lg flex items-center mb-3 uppercase tracking-wider">
                             <AlertTriangle className="w-6 h-6 mr-2 stroke-2" /> CRITICAL FLAGS
                         </h2>
@@ -176,7 +176,7 @@ export const PhysicianView = () => {
                 {/* Formatted Content */}
                 <div className="space-y-10 text-slate-800 dark:text-slate-200">
                     
-                    <div className="bg-background p-6 rounded-xl border border-border">
+                    <div className="glass-card p-6 rounded-xl border border-white/5">
                         <h2 className="text-sm font-bold text-text-muted uppercase tracking-widest mb-3 border-b border-border pb-2">Chief Complaint</h2>
                         <p className="text-2xl font-bold text-text leading-snug">{summary.chief_complaint || 'N/A'}</p>
                     </div>

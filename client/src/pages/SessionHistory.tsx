@@ -103,7 +103,7 @@ export const SessionHistory = () => {
                 <p className="text-text-muted mt-1">{t('sessions_flow.subtitle')}</p>
             </div>
 
-            <div className="bg-surface rounded-2xl shadow-sm border border-border flex-1 flex flex-col overflow-hidden">
+            <div className="glass-card rounded-2xl flex-1 flex flex-col overflow-hidden border border-white/5">
                 <div className="p-4 border-b border-border bg-background flex flex-wrap gap-4 items-center justify-between">
                     <div className="relative flex-1 min-w-[300px] max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted w-5 h-5" />

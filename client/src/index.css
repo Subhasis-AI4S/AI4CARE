@@ -17,11 +17,11 @@
 
 :root {
   /* Common Colors (Shared) */
-  --color-primary: #0f172a;  /* slate-900 */
-  --color-secondary: #0ea5e9; /* sky-500 */
-  --color-accent: #0d9488;   /* teal-600 */
-  --color-warning: #f59e0b;  /* amber-500 */
-  --color-danger: #ef4444;   /* red-500 */
+  --color-primary: #020617;
+  --color-secondary: #00A3FF; /* Cyan Primary */
+  --color-accent: #10B981;    /* Emerald Status */
+  --color-warning: #f59e0b;
+  --color-danger: #f43f5e;
   
   /* Light Theme Variables */
   --background: #f8fafc; /* slate-50 */
@@ -37,11 +37,11 @@
 
 .dark {
   /* Dark Theme Variables */
-  --color-primary: #f8fafc;    /* slate-50 */
-  --color-secondary: #38bdf8;  /* sky-400 */
-  --color-accent: #2dd4bf;     /* teal-400 */
-  --color-warning: #fbbf24;    /* amber-400 */
-  --color-danger: #f87171;     /* red-400 */
+  --color-primary: #f8fafc;
+  --color-secondary: #00A3FF;
+  --color-accent: #10B981;
+  --color-warning: #fbbf24;
+  --color-danger: #fb7185;
   
   --background: #0f172a; /* slate-900 */
   --surface: #1e293b;    /* slate-800 */
@@ -120,7 +120,7 @@ input::placeholder, textarea::placeholder {
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -128,13 +128,13 @@ input::placeholder, textarea::placeholder {
 
 .glass-dark {
   background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-adaptive {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
@@ -145,10 +145,11 @@ input::placeholder, textarea::placeholder {
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.2);
 }
 
 .transition-premium {

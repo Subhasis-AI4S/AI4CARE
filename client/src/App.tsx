@@ -116,31 +116,22 @@ const Sidebar = () => {
         </ul>
       </div>
 
-      <div className="p-3 mx-4 mb-6 rounded-xl glass-adaptive relative z-10 border border-border/10 shadow-sm">
-        <div className="flex items-center gap-2.5 mb-3 px-1 overflow-hidden">
-            <div className="w-9 h-9 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold shadow-md shrink-0 border border-white/20 text-xs">
+      <div className="mx-4 mb-6 p-2 rounded-2xl glass-card flex items-center justify-between gap-2 border border-white/5">
+        <div className="flex items-center gap-2 overflow-hidden flex-1">
+            <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center text-white font-black text-[10px] shadow-lg shadow-secondary/20 shrink-0">
                 {user?.fullName?.charAt(0) || 'D'}
             </div>
-            <div className="overflow-hidden min-w-0">
-                <div className="text-xs font-bold text-text truncate" title={user?.fullName}>{user?.fullName || 'Doctor'}</div>
-                <div className="text-[9px] font-bold text-text-muted truncate uppercase tracking-tight" title={clinicName}>{clinicName}</div>
+            <div className="min-w-0">
+                <div className="text-[10px] font-black text-text truncate uppercase tracking-tight">{user?.fullName?.split(' ')[0] || 'User'}</div>
+                <div className="text-[8px] font-black text-text-muted truncate uppercase tracking-tighter opacity-50">{clinicName}</div>
             </div>
         </div>
-        <div className="flex gap-1.5">
-          <button 
-            onClick={toggleTheme}
-            className="flex-1 flex justify-center items-center py-2 rounded-lg text-text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-text transition-premium border border-border/10"
-            title="Toggle Dark Mode"
-          >
-            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-warning" /> : <Moon className="w-3.5 h-3.5" />}
+        <div className="flex items-center gap-1 shrink-0">
+          <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-white/5 text-text-muted transition-premium">
+            {theme === 'dark' ? <Sun className="w-3 h-3 text-warning" /> : <Moon className="w-3 h-3" />}
           </button>
-          <button 
-            onClick={handleLogout}
-            className="flex-[3] flex justify-center items-center py-2 rounded-lg text-danger hover:bg-danger/10 transition-premium border border-danger/10 font-bold text-[10px]"
-            title="Logout"
-          >
-            <LogOut className="w-3 h-3 mr-1.5" />
-            {t('logout') || 'Logout'}
+          <button onClick={handleLogout} className="p-2 rounded-lg hover:bg-danger/10 text-danger transition-premium">
+            <LogOut className="w-3 h-3" />
           </button>
         </div>
       </div>

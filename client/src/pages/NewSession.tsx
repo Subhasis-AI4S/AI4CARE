@@ -343,33 +343,32 @@ export const NewSession = () => {
     }
 
     return (
-        <div className="p-4 md:p-8 md:pt-12 max-w-5xl mx-auto h-full flex flex-col space-y-6">
-            <div className="flex items-center gap-4 mb-4">
-                <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
+        <div className="p-4 md:p-8 md:pt-12 max-w-[800px] mx-auto h-full flex flex-col space-y-8">
+            <div className="flex items-center gap-4 mb-2">
+                <div className="w-10 h-10 bg-secondary rounded-2xl flex items-center justify-center shadow-lg shadow-secondary/20">
                     <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="text-3xl font-black tracking-tight text-text">{t('new_session')}</h1>
+                <h1 className="text-3xl font-black tracking-tight text-text lowercase first-letter:uppercase">{t('new_session')}</h1>
             </div>
             {renderStepTracker()}
 
-            <div className="bg-surface rounded-2xl shadow-xl dark:shadow-none border border-border p-8 flex-1 flex flex-col transition-all duration-300">
-
+            <div className="glass-card rounded-[2.5rem] p-8 flex-1 flex flex-col border border-border/50">
                 {/* STEP 1: PATIENT INFO */}
                 {step === 1 && (
-                    <div className="flex-1 animate-in fade-in duration-300 overflow-y-auto">
-                        <h2 className="text-xl font-bold text-text mb-6 border-b border-border pb-4">Patient Details</h2>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="col-span-2">
-                                <label className="block text-sm font-bold text-text mb-2">Full Name <span className="text-red-500">*</span></label>
-                                <input value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })} type="text" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text placeholder:text-text-muted/50" placeholder="e.g. John Doe" />
+                    <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-y-auto">
+                        <h2 className="text-xs font-black text-text-muted mb-8 uppercase tracking-[0.2em] border-b border-border pb-4">Patient Profile</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="col-span-1 md:col-span-2">
+                                <label className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-3 ml-1">Full Name <span className="text-danger">*</span></label>
+                                <input value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })} type="text" className="w-full px-6 py-4 bg-background/50 border border-border/50 rounded-2xl focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none text-text transition-all" placeholder="e.g. John Doe" />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-text mb-2">Age <span className="text-red-500">*</span></label>
-                                <input value={patient.age} onChange={e => setPatient({ ...patient, age: e.target.value })} type="number" className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text placeholder:text-text-muted/50" placeholder="e.g. 45" />
+                                <label className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-3 ml-1">Age <span className="text-danger">*</span></label>
+                                <input value={patient.age} onChange={e => setPatient({ ...patient, age: e.target.value })} type="number" className="w-full px-6 py-4 bg-background/50 border border-border/50 rounded-2xl focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none text-text transition-all" placeholder="e.g. 45" />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-text mb-2">Gender <span className="text-red-500">*</span></label>
-                                <select value={patient.gender} onChange={e => setPatient({ ...patient, gender: e.target.value })} className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent text-text">
+                                <label className="block text-[10px] font-black text-text-muted uppercase tracking-widest mb-3 ml-1">Gender <span className="text-danger">*</span></label>
+                                <select value={patient.gender} onChange={e => setPatient({ ...patient, gender: e.target.value })} className="w-full px-6 py-4 bg-background/50 border border-border/50 rounded-2xl focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none text-text transition-all appearance-none cursor-pointer">
                                     <option className="bg-surface text-text">Male</option>
                                     <option className="bg-surface text-text">Female</option>
                                     <option className="bg-surface text-text">Other</option>

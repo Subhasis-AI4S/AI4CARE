@@ -118,51 +118,20 @@ export const Dashboard = () => {
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
-            <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-900 rounded-[2rem] p-8 text-white shadow-xl overflow-hidden group border border-white/5 border-t-white/10">
-                {/* Immersive Background Mesh */}
-                <div className="absolute inset-0 bg-mesh opacity-40 group-hover:opacity-60 transition-opacity duration-1000" />
-                <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-accent/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/4" />
-                
+            <div className="relative flex flex-col md:flex-row justify-between items-center bg-slate-950 rounded-3xl p-6 text-white shadow-xl overflow-hidden group border border-white/5">
+                <div className="absolute inset-0 bg-mesh opacity-30 group-hover:opacity-50 transition-opacity duration-1000" />
                 <div className="relative z-10 flex-1">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md mb-4">
-                        <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent">Clinic Active</span>
-                    </div>
-                    
-                    <h1 className="text-3xl md:text-4xl font-black mb-3 tracking-tighter leading-tight">
-                        Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-cyan-400 to-blue-400">Dr. {doctorName}</span>
+                    <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-tight mb-1">
+                        Welcome, <span className="text-secondary">Dr. {doctorName}</span>
                     </h1>
-                    
-                    <p className="text-slate-400 text-base max-w-lg mb-6 leading-relaxed font-medium opacity-80">
-                        {clinicName} is fully optimized and your clinical suite is ready.
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-3">
-                        <div className="inline-flex items-center bg-white/5 hover:bg-white/10 transition-premium px-4 py-2 rounded-[1rem] border border-white/10 cursor-default group" title={t('common.clinic_id')}>
-                            <Activity className="w-3.5 h-3.5 mr-2.5 text-accent" />
-                            <span className="text-[9px] font-bold opacity-60 mr-2 uppercase tracking-[0.2em]">Node:</span>
-                            <code className="text-xs font-bold font-mono text-white tracking-widest">{user?.tenantId}</code>
-                        </div>
-                        <button 
-                            onClick={() => {
-                                const url = `${window.location.origin}/login/staff`;
-                                navigator.clipboard.writeText(url);
-                                toast.success('Staff Login URL copied to clipboard!');
-                            }}
-                            className="flex items-center gap-2 text-[9px] font-bold text-slate-400 hover:text-white transition-premium bg-white/5 hover:bg-white/10 px-4 py-2 rounded-[1rem] border border-white/5 group"
-                        >
-                            <Copy className="w-3.5 h-3.5" />
-                            STAFF ACCESS
-                        </button>
-                    </div>
+                    <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest opacity-60">AI4CARE Intelligence Suite</p>
                 </div>
 
-                <div className="relative z-10 flex flex-col items-center mt-8 md:mt-0">
-                    <Link to="/session/new" className="btn-gradient px-8 py-4 rounded-[1.5rem] font-black text-base shadow-lg flex items-center group active:scale-95 transition-all">
-                        <Activity className="w-6 h-6 mr-3 text-white" />
+                <div className="relative z-10 flex items-center gap-4 mt-4 md:mt-0">
+                    <Link to="/session/new" className="bg-secondary hover:bg-secondary/90 text-white px-8 py-3 rounded-2xl font-black text-sm shadow-lg shadow-secondary/25 flex items-center transition-premium active:scale-95 group/btn">
+                        <Activity className="w-5 h-5 mr-2.5 group-hover:rotate-12 transition-transform" />
                         {t('new_session')}
                     </Link>
-                    <p className="mt-2 text-[9px] font-bold text-slate-500 uppercase tracking-[0.3em]">Start Intake</p>
                 </div>
             </div>
 
@@ -298,7 +267,7 @@ export const StatusBadge = ({ status }: { status: string }) => {
     const { t } = useTranslation();
     switch (status) {
         case 'completed':
-            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"><CheckCircle className="w-3 h-3 mr-1" /> {t('dashboard_flow.status_completed')}</span>;
+            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-accent/10 text-accent uppercase tracking-wider"><CheckCircle className="w-3 h-3 mr-1" /> {t('dashboard_flow.status_completed')}</span>;
         case 'flagged':
             return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400"><AlertTriangle className="w-3 h-3 mr-1" /> {t('dashboard_flow.status_flagged')}</span>;
         case 'processing':
@@ -310,7 +279,7 @@ export const StatusBadge = ({ status }: { status: string }) => {
 
 const MetricCard = ({ title, value, icon, trend }: any) => {
     return (
-        <div className="bg-surface p-6 rounded-[2rem] shadow-sm border border-border flex items-center h-full hover-lift group overflow-hidden relative">
+        <div className="glass-card p-6 rounded-[2rem] flex items-center h-full hover-lift group overflow-hidden relative border border-white/5">
             <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-700" />
             <div className={`p-4 rounded-2xl mr-5 flex flex-shrink-0 bg-gradient-primary shadow-xl shadow-accent/20 relative z-10`}>
                 <div className="text-white">
