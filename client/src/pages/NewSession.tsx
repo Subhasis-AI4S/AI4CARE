@@ -298,24 +298,23 @@ export const NewSession = () => {
     // --- Renderers ---
     const renderStepTracker = () => {
         return (
-            <div className="hidden md:flex justify-between items-center mb-10 bg-surface/50 dark:bg-slate-900/30 backdrop-blur-md p-5 rounded-2xl border border-border shadow-sm transition-all duration-500">
+            <div className="hidden md:flex justify-between items-center mb-12 bg-slate-900/5 dark:bg-slate-900/30 backdrop-blur-xl p-6 rounded-[2rem] border border-border/50 shadow-2xl transition-premium relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
                 {steps.map((s, i) => (
-                    <div key={s.id} className="flex items-center flex-1 last:flex-initial">
-                        <div className="flex flex-col items-center gap-2.5 flex-1 group">
-                            <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold transition-all duration-500 ${step >= s.id
-                                     ? 'bg-gradient-primary text-white shadow-lg'
-                                    : 'bg-background text-text-muted border border-border'
+                    <div key={s.id} className="flex items-center flex-1 last:flex-initial relative z-10">
+                        <div className="flex flex-col items-center gap-3 flex-1 group">
+                            <div className={`w-12 h-12 rounded-[1.2rem] flex items-center justify-center font-black transition-premium ${step >= s.id
+                                     ? 'bg-gradient-primary text-white shadow-[0_10px_20px_rgba(16,185,129,0.3)]'
+                                    : 'bg-surface text-text-muted border border-border shadow-sm'
                                 }`}>
-                                {step > s.id ? <CheckCircle2 className="w-5 h-5 animate-in zoom-in duration-300" /> : s.id}
+                                {step > s.id ? <CheckCircle2 className="w-6 h-6 animate-in zoom-in duration-500" /> : <span className="opacity-80">{s.id}</span>}
                             </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-[0.1em] transition-colors duration-300 ${step >= s.id ? 'text-accent' : 'text-text-muted'
-                                }`}>
+                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-premium ${step >= s.id ? 'text-accent' : 'text-text-muted opacity-60'}`}>
                                 {s.label}
                             </span>
                         </div>
                         {i < steps.length - 1 && (
-                            <div className={`h-[2px] w-full mx-4 rounded-full transition-all duration-700 ${step > s.id ? 'bg-gradient-primary shadow-sm' : 'bg-background'
-                                }`} />
+                            <div className={`h-[3px] w-full mx-6 rounded-full transition-premium ${step > s.id ? 'bg-gradient-primary shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-border/30'}`} />
                         )}
                     </div>
                 ))}
@@ -325,17 +324,17 @@ export const NewSession = () => {
 
     if (isComplete) {
         return (
-            <div className="p-8 max-w-4xl mx-auto flex flex-col items-center justify-center h-full text-center">
-                <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
-                    <CheckCircle2 className="w-12 h-12" />
+            <div className="p-12 max-w-4xl mx-auto flex flex-col items-center justify-center h-full text-center animate-in fade-in zoom-in duration-700">
+                <div className="w-32 h-32 bg-emerald-500/10 text-accent rounded-full flex items-center justify-center mb-8 shadow-[0_0_50px_rgba(16,185,129,0.2)]">
+                    <CheckCircle2 className="w-16 h-16" />
                 </div>
-                <h1 className="text-3xl font-bold text-text mb-2">Session Complete!</h1>
-                <p className="text-text-muted mb-8 max-w-md">The patient intake session has been successfully recorded and the clinical summary is ready for the physician.</p>
-                <div className="flex gap-4">
-                    <button onClick={() => navigate(`/physician/${sessionId}`)} className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-all shadow-sm">
+                <h1 className="text-5xl font-black text-text mb-4 tracking-tight">Session Complete!</h1>
+                <p className="text-text-muted text-xl mb-12 max-w-xl leading-relaxed">The patient intake session has been successfully recorded. The AI has generated a clinical summary ready for your review in the physician dashboard.</p>
+                <div className="flex gap-6">
+                    <button onClick={() => navigate(`/physician/${sessionId}`)} className="btn-gradient px-10 py-4 rounded-2xl font-black shadow-xl shadow-accent/20 transition-premium">
                         Open Physician View
                     </button>
-                    <button onClick={() => navigate('/')} className="px-6 py-3 bg-surface text-text font-medium rounded-xl hover:bg-background transition-all shadow-sm border border-border">
+                    <button onClick={() => navigate('/')} className="px-10 py-4 bg-surface text-text font-black rounded-2xl hover:bg-background transition-premium shadow-sm border border-border">
                         Back to Dashboard
                     </button>
                 </div>
@@ -344,8 +343,13 @@ export const NewSession = () => {
     }
 
     return (
-        <div className="p-4 md:p-8 max-w-5xl mx-auto h-full flex flex-col space-y-4">
-            <h1 className="text-3xl font-bold text-text mb-2">{t('new_session')}</h1>
+        <div className="p-4 md:p-10 max-w-6xl mx-auto h-full flex flex-col space-y-6">
+            <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-lg shadow-accent/20">
+                    <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-4xl font-black tracking-tight text-text">{t('new_session')}</h1>
+            </div>
             {renderStepTracker()}
 
             <div className="bg-surface rounded-2xl shadow-xl dark:shadow-none border border-border p-8 flex-1 flex flex-col transition-all duration-300">

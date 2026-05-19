@@ -118,15 +118,32 @@ export const Dashboard = () => {
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-gradient-header p-8 rounded-2xl text-white shadow-md gap-6">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold mb-2">{t('dashboard_flow.welcome')}, {doctorName}</h1>
-                    <p className="text-teal-100 text-base md:text-lg opacity-90 mb-3">{clinicName} • {t('dashboard_flow.subtitle')}</p>
-                    <div className="flex flex-col gap-2 min-w-0">
-                        <div className="inline-flex items-center bg-white/10 dark:bg-slate-900/10 hover:bg-white/20 dark:bg-slate-900/20 transition-colors px-4 py-1.5 rounded-xl border border-white/20 cursor-default group max-w-fit" title={t('common.clinic_id')}>
-                            <Activity className="w-4 h-4 mr-2 text-teal-200 group-hover:text-white transition-colors" />
-                            <span className="text-xs font-medium opacity-80 mr-2 uppercase tracking-wide">{t('common.clinic_id')}:</span>
-                            <code className="text-sm font-bold font-mono tracking-wider">{user?.tenantId}</code>
+            <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-900 rounded-[3rem] p-12 text-white shadow-2xl overflow-hidden group border border-white/5 border-t-white/10">
+                {/* Immersive Background Mesh */}
+                <div className="absolute inset-0 bg-mesh opacity-40 group-hover:opacity-60 transition-opacity duration-1000" />
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-accent/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4" />
+                <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-600/10 rounded-full blur-[100px] translate-y-1/4 -translate-x-1/4" />
+                
+                <div className="relative z-10 flex-1">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md mb-8">
+                        <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent">Clinical Dashboard Active</span>
+                    </div>
+                    
+                    <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tighter leading-none">
+                        Welcome, <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-cyan-400 to-blue-400">Dr. {doctorName}</span>
+                    </h1>
+                    
+                    <p className="text-slate-400 text-xl max-w-xl mb-10 leading-relaxed font-medium opacity-90">
+                        {clinicName} is fully optimized. <br className="hidden md:block"/> Your medical intelligence suite is ready.
+                    </p>
+                    
+                    <div className="flex flex-wrap gap-5">
+                        <div className="inline-flex items-center bg-white/5 hover:bg-white/10 transition-premium px-5 py-2.5 rounded-2xl border border-white/10 cursor-default group" title={t('common.clinic_id')}>
+                            <Activity className="w-4 h-4 mr-3 text-accent group-hover:rotate-12 transition-transform" />
+                            <span className="text-[10px] font-bold opacity-60 mr-3 uppercase tracking-[0.2em]">Clinic Node:</span>
+                            <code className="text-sm font-bold font-mono text-white tracking-widest">{user?.tenantId}</code>
                         </div>
                         <button 
                             onClick={() => {
@@ -134,18 +151,22 @@ export const Dashboard = () => {
                                 navigator.clipboard.writeText(url);
                                 toast.success('Staff Login URL copied to clipboard!');
                             }}
-                            className="flex items-center gap-2 text-[11px] font-bold text-teal-200 hover:text-white transition-all bg-white/5 dark:bg-slate-900/5 hover:bg-white/10 dark:bg-slate-900/10 px-3 py-1 rounded-lg w-fit border border-white/5 hover:border-white/10 group"
+                            className="flex items-center gap-3 text-[10px] font-bold text-slate-400 hover:text-white transition-premium bg-white/5 hover:bg-white/10 px-5 py-2.5 rounded-2xl border border-white/5 hover:border-white/10 group"
                         >
-                            <Copy className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                            Copy Staff Login Link
-                            <ExternalLink className="w-3 h-3 opacity-50" />
+                            <Copy className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                            STAFF ACCESS LINK
+                            <ExternalLink className="w-3 h-3 opacity-30" />
                         </button>
                     </div>
                 </div>
-                <Link to="/session/new" className="btn-gradient px-8 py-3 rounded-xl font-bold shadow-lg flex items-center group w-full md:w-auto justify-center active:scale-95">
-                    <Activity className="w-5 h-5 mr-3 text-white transition-transform group-hover:rotate-12" />
-                    {t('new_session')}
-                </Link>
+
+                <div className="relative z-10 flex flex-col items-center mt-12 md:mt-0">
+                    <Link to="/session/new" className="btn-gradient px-12 py-7 rounded-[2.5rem] font-black text-xl shadow-[0_20px_50px_rgba(16,185,129,0.3)] flex items-center group active:scale-95 transition-all">
+                        <Activity className="w-8 h-8 mr-4 text-white group-hover:rotate-[360deg] transition-transform duration-1000" />
+                        {t('new_session')}
+                    </Link>
+                    <p className="mt-4 text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Start AI Intake</p>
+                </div>
             </div>
 
             {/* Metrics */}
@@ -292,19 +313,19 @@ export const StatusBadge = ({ status }: { status: string }) => {
 
 const MetricCard = ({ title, value, icon, trend }: any) => {
     return (
-        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-border flex items-center h-full hover-lift">
-            <div className={`p-4 rounded-2xl mr-5 flex flex-shrink-0 bg-gradient-primary shadow-lg`}>
+        <div className="bg-surface p-6 rounded-[2rem] shadow-sm border border-border flex items-center h-full hover-lift group overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-700" />
+            <div className={`p-4 rounded-2xl mr-5 flex flex-shrink-0 bg-gradient-primary shadow-xl shadow-accent/20 relative z-10`}>
                 <div className="text-white">
                     {icon && typeof icon === 'object' ? { ...icon, props: { ...icon.props, className: 'text-white w-6 h-6' } } : icon}
-                    {/* If passing Lucide icon, it needs to be text-white */}
                 </div>
             </div>
-            <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1 truncate">{title}</p>
+            <div className="flex-1 min-w-0 relative z-10">
+                <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-1 truncate">{title}</p>
                 <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-bold text-text">{value}</p>
+                    <p className="text-3xl font-black text-text">{value}</p>
                     {trend && (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${trend.isUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400'}`}>
+                        <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${trend.isUp ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
                             {trend.isUp ? '↑' : '↓'} {Math.abs(trend.percent)}%
                         </span>
                     )}

@@ -76,12 +76,23 @@ const Sidebar = () => {
     ...(user?.role === 'superadmin' ? [{ name: 'Platform Management', path: '/superadmin', icon: ShieldCheck }] : []),
   ];
   return (
-    <div className="w-64 bg-surface border-r border-border h-screen flex flex-col shadow-sm transition-colors duration-300">
-      <div className="h-16 flex items-center px-6 bg-gradient-header text-white">
-        <Stethoscope className="w-6 h-6 mr-3" />
-        <span className="font-bold text-lg tracking-wide shrink-0 whitespace-nowrap overflow-hidden text-ellipsis">AI4CARE</span>
+    <div className="w-64 bg-background border-r border-border h-screen flex flex-col transition-premium relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute top-0 left-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      
+      <div className="p-6 mb-2 mt-2 relative z-10">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <Stethoscope className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-black tracking-tight text-text">AI4CARE</h1>
+            <p className="text-[10px] font-bold text-accent uppercase tracking-[0.2em] opacity-80">Intelligence</p>
+          </div>
+        </div>
       </div>
-      <div className="p-4 flex-1 overflow-y-auto">
+
+      <div className="flex-1 px-4 py-4 relative z-10 overflow-y-auto">
         <ul className="space-y-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -89,44 +100,46 @@ const Sidebar = () => {
               <li key={item.name}>
                 <Link
                   to={item.path}
-                  className={`flex items-center px-4 py-3 rounded-xl transition-all hover-lift ${
+                  className={`flex items-center px-4 py-3 rounded-xl transition-premium group hover-lift ${
                     isActive
-                      ? 'bg-gradient-primary text-white font-semibold shadow-lg'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-gradient-primary text-white font-bold shadow-xl shadow-emerald-500/20'
+                      : 'text-text-muted hover:bg-surface hover:text-text'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                  {item.name}
+                  <item.icon className={`w-5 h-5 mr-3 transition-colors ${isActive ? 'text-white' : 'text-text-muted group-hover:text-accent'}`} />
+                  <span className="text-sm tracking-wide">{item.name}</span>
+                  {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]" />}
                 </Link>
               </li>
             );
           })}
         </ul>
       </div>
-      <div className="p-4 border-t border-border bg-slate-50/50 dark:bg-slate-900/20 backdrop-blur-sm">
+
+      <div className="p-4 mx-4 mb-6 rounded-2xl glass-dark relative z-10 border border-white/5">
         <div className="flex items-center gap-3 mb-4 px-2 overflow-hidden">
-            <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold shadow-md shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold shadow-md shrink-0 border border-white/20">
                 {user?.fullName?.charAt(0) || 'D'}
             </div>
             <div className="overflow-hidden min-w-0">
-                <div className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate" title={user?.fullName}>{user?.fullName || 'Doctor'}</div>
-                <div className="text-[10px] font-medium text-slate-400 truncate uppercase tracking-wider" title={clinicName}>{clinicName}</div>
+                <div className="text-sm font-bold text-text truncate" title={user?.fullName}>{user?.fullName || 'Doctor'}</div>
+                <div className="text-[10px] font-bold text-text-muted truncate uppercase tracking-wider" title={clinicName}>{clinicName}</div>
             </div>
         </div>
         <div className="flex gap-2">
           <button 
             onClick={toggleTheme}
-            className="flex-1 flex justify-center items-center py-3 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-medium border border-border"
+            className="flex-1 flex justify-center items-center py-2.5 rounded-xl text-text-muted hover:bg-white/5 hover:text-text transition-premium border border-white/5"
             title="Toggle Dark Mode"
           >
-            {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5" />}
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-warning" /> : <Moon className="w-4 h-4" />}
           </button>
           <button 
             onClick={handleLogout}
-            className="flex-[3] flex justify-center items-center py-3 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-all font-medium border border-red-100 dark:border-red-900/30"
+            className="flex-[3] flex justify-center items-center py-2.5 rounded-xl text-danger hover:bg-danger/10 transition-premium border border-danger/20 font-bold text-xs"
             title="Logout"
           >
-            <LogOut className="w-4 h-4 mr-2" />
+            <LogOut className="w-3.5 h-3.5 mr-2" />
             {t('logout') || 'Logout'}
           </button>
         </div>

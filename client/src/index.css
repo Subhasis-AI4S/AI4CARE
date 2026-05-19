@@ -105,13 +105,18 @@ input::placeholder, textarea::placeholder {
   background: var(--gradient-primary);
   color: white !important;
   box-shadow: var(--gradient-glow);
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .btn-gradient:hover {
-  background: var(--gradient-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.1);
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+}
+
+.bg-mesh {
+  background-image: var(--gradient-mesh);
+  background-attachment: fixed;
 }
 
 .glass {
@@ -122,10 +127,17 @@ input::placeholder, textarea::placeholder {
 }
 
 .glass-dark {
-  background: rgba(30, 41, 59, 0.4);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
 }
 
 .transition-premium {
