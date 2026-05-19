@@ -36,8 +36,34 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     const templates = await db.all(query, [tenantId]);
     const lowerComplaint = (complaint || '').toLowerCase();
     
-    // Improved matching logic
+    // Improved matching logic with strict language partitioning
     let matchedTemplates = templates.filter(t => {
+        const tName = (t.name || '').toUpperCase();
+        const targetLangUpper = (language || 'en').toUpperCase();
+        
+        // 1. Language Guard: Heuristic to identify template language
+        // We assume names like "Fever (BN)" or "Fever (BN)" belong to specific languages.
+        // If there is no parenthesis, we assume English.
+        let templateLang = 'EN'; 
+        const match = tName.match(/\(([^)]+)\)/);
+        if (match) {
+            templateLang = match[1].trim();
+        }
+
+        // Multi-language names map
+        const langMap = {
+            'BENGALI': 'BN',
+            'HINDI': 'HI',
+            'ENGLISH': 'EN'
+        };
+        const normalizedTemplateLang = langMap[templateLang] || templateLang;
+        const normalizedTargetLang = langMap[targetLangUpper] || targetLangUpper;
+
+        if (normalizedTemplateLang !== normalizedTargetLang) {
+            return false;
+        }
+
+        // 2. Keyword Match
         const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
         return keywords.some(k => {
             const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -58,13 +84,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
                 parsedQs = rawQs; // Already an object/array
             }
             const localizedQs = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => {
-                if (typeof q === 'string') {
-                    // Heuristic: if questions are just strings, they must be in the interview language.
-                    // If the template name contains a language hint like '(Bengali)', but the interview is 'en', skip it.
-                    if (language === 'en' && t.name.toLowerCase().includes('bengali')) return '';
-                    if (language === 'bn' && !t.name.toLowerCase().includes('bengali')) return '';
-                    return q;
-                }
+                if (typeof q === 'string') return q;
                 return q[language] || q.en || '';
             }).filter(q => q.trim().length > 0);
 
@@ -74,7 +94,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
                     seenQs.add(q.toLowerCase());
                 }
             }
-        } catch (e) { console.error(`[Templates] Error parsing ${t.name}:`, e); }
+        } catch (e) { console.error(`[Templates] Error parsing ${t.name || 'Unknown'}:`, e); }
     }
 
     // IF WE HAVE TEMPLATES, USE THEM
