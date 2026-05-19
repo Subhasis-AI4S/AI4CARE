@@ -57,9 +57,16 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
             } else {
                 parsedQs = rawQs; // Already an object/array
             }
-            const localizedQs = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => 
-                typeof q === 'string' ? q : (q[language] || q.en || '')
-            ).filter(q => q.trim().length > 0);
+            const localizedQs = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => {
+                if (typeof q === 'string') {
+                    // Heuristic: if questions are just strings, they must be in the interview language.
+                    // If the template name contains a language hint like '(Bengali)', but the interview is 'en', skip it.
+                    if (language === 'en' && t.name.toLowerCase().includes('bengali')) return '';
+                    if (language === 'bn' && !t.name.toLowerCase().includes('bengali')) return '';
+                    return q;
+                }
+                return q[language] || q.en || '';
+            }).filter(q => q.trim().length > 0);
 
             for (const q of localizedQs) {
                 if (!seenQs.has(q.toLowerCase())) {

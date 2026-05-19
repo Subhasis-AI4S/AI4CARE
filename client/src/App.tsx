@@ -122,7 +122,7 @@ const Sidebar = () => {
                 {user?.fullName?.charAt(0) || 'D'}
             </div>
             <div className="min-w-0">
-                <div className="text-[10px] font-black text-text truncate uppercase tracking-tight">{user?.fullName?.split(' ')[0] || 'User'}</div>
+                <div className="text-[10px] font-black text-text truncate uppercase tracking-tight">{user?.fullName || 'User'}</div>
                 <div className="text-[8px] font-black text-text-muted truncate uppercase tracking-tighter opacity-50">{clinicName}</div>
             </div>
         </div>

@@ -128,7 +128,7 @@ export const Dashboard = () => {
                         <p className="text-slate-400 text-xs font-semibold uppercase tracking-widest opacity-60">AI4CARE Intelligence Suite</p>
                         <div className="h-4 w-[1px] bg-white/10 hidden sm:block" />
                         <div className="flex items-center bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">
-                            <span className="text-[9px] font-black opacity-40 uppercase tracking-tighter mr-1.5">Node:</span>
+                            <span className="text-[9px] font-black opacity-40 uppercase tracking-tighter mr-1.5">ID:</span>
                             <code className="text-[10px] font-mono font-bold text-secondary">{user?.tenantId}</code>
                         </div>
                     </div>

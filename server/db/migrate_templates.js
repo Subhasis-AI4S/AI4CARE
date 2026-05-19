@@ -29,6 +29,17 @@ const migrateTemplates = async () => {
             ] 
         },
         { 
+            name: 'Cold', 
+            keywords: 'cold, flu, runny nose, sneezing, congestion', 
+            questions: [
+                "When did your cold symptoms start?",
+                "Do you have a runny or stuffy nose?",
+                "Are you experiencing any sneezing or sore throat?",
+                "Do you have a cough or fever alongside the cold?",
+                "Is there any facial pain or pressure?"
+            ] 
+        },
+        { 
             name: 'Chest Pain', 
             keywords: 'chest pain, pressure, heaviness', 
             questions: [
