@@ -41,25 +41,19 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         const tName = (t.name || '').toUpperCase();
         const targetLangUpper = (language || 'en').toUpperCase();
         
-        // 1. Language Guard: Heuristic to identify template language
-        // We assume names like "Fever (BN)" or "Fever (BN)" belong to specific languages.
-        // If there is no parenthesis, we assume English.
         let templateLang = 'EN'; 
-        const match = tName.match(/\(([^)]+)\)/);
-        if (match) {
-            templateLang = match[1].trim();
+        if (tName.includes('(BN)')) {
+            templateLang = 'BN';
+        } else if (tName.includes('(HI)')) {
+            templateLang = 'HI';
         }
 
-        // Multi-language names map
-        const langMap = {
-            'BENGALI': 'BN',
-            'HINDI': 'HI',
-            'ENGLISH': 'EN'
-        };
-        const normalizedTemplateLang = langMap[templateLang] || templateLang;
-        const normalizedTargetLang = langMap[targetLangUpper] || targetLangUpper;
+        const normalizedTargetLang = targetLangUpper === 'BENGALI' ? 'BN' : 
+                                     targetLangUpper === 'HINDI' ? 'HI' : 
+                                     targetLangUpper === 'EN' ? 'EN' : 
+                                     targetLangUpper.substring(0, 2);
 
-        if (normalizedTemplateLang !== normalizedTargetLang) {
+        if (templateLang !== normalizedTargetLang) {
             return false;
         }
 

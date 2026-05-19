@@ -734,6 +734,21 @@ export const NewSession = () => {
                                     />
                                 </div>
                             </div>
+
+                            {/* Raw Q&A Transcript */}
+                            <div className="mt-8 bg-surface p-6 rounded-3xl border border-border shadow-sm">
+                                <label className="flex items-center gap-2 text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-4">
+                                    <Languages className="w-3.5 h-3.5" /> Full Consultation Transcript
+                                </label>
+                                <div className="space-y-4">
+                                    {aiQuestions.map((q, i) => (
+                                        <div key={i} className="p-4 bg-background rounded-2xl border border-border/50">
+                                            <p className="text-xs font-bold text-accent mb-1">Q: {q}</p>
+                                            <p className="text-sm text-text">{answers[i] || '(No answer provided)'}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
 
                         <div className="mt-8 flex justify-between items-center border-t border-border pt-8">
