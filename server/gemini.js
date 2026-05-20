@@ -37,7 +37,8 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     const lowerComplaint = (complaint || '').toLowerCase();
     
     // Improved matching logic with strict language partitioning
-    let matchedTemplates = templates.filter(t => {
+    // 1. Filter and Score Templates
+    let scoredTemplates = templates.map(t => {
         const tName = (t.name || '').toUpperCase();
         const targetLangUpper = (language || 'en').toUpperCase();
         
@@ -53,48 +54,40 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
                                      targetLangUpper === 'EN' ? 'EN' : 
                                      targetLangUpper.substring(0, 2);
 
-        if (templateLang !== normalizedTargetLang) {
-            return false;
-        }
+        if (templateLang !== normalizedTargetLang) return { score: 0 };
 
-        // 2. Keyword Match
         const keywords = (t.trigger_keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(k => k.length > 0);
-        return keywords.some(k => {
+        let score = 0;
+        keywords.forEach(k => {
             const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(^|\\P{L})${escapedK}(\\P{L}|$)`, 'iu');
-            return regex.test(lowerComplaint);
-        });
-    });
-
-    const allTemplateQuestions = [];
-    const seenQs = new Set();
-    for (const t of matchedTemplates) {
-        try {
-            let rawQs = t.questions || '[]';
-            let parsedQs = [];
-            if (typeof rawQs === 'string') {
-                parsedQs = JSON.parse(rawQs);
-            } else {
-                parsedQs = rawQs; // Already an object/array
+            if (regex.test(lowerComplaint)) {
+                score += k.length; // Priority to longer, more specific keywords
             }
-            const localizedQs = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => {
+        });
+
+        return { ...t, score };
+    }).filter(t => t.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    // 2. Pick the BEST single template match
+    const bestTemplate = scoredTemplates[0];
+
+    if (bestTemplate) {
+        console.log(`[AI] Best match: "${bestTemplate.name}" (Score: ${bestTemplate.score})`);
+        try {
+            let rawQs = bestTemplate.questions || '[]';
+            let parsedQs = typeof rawQs === 'string' ? JSON.parse(rawQs) : rawQs;
+            
+            const questions = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => {
                 if (typeof q === 'string') return q;
                 return q[language] || q.en || '';
             }).filter(q => q.trim().length > 0);
 
-            for (const q of localizedQs) {
-                if (!seenQs.has(q.toLowerCase())) {
-                    allTemplateQuestions.push(q);
-                    seenQs.add(q.toLowerCase());
-                }
-            }
-        } catch (e) { console.error(`[Templates] Error parsing ${t.name || 'Unknown'}:`, e); }
-    }
-
-    // IF WE HAVE TEMPLATES, USE THEM
-    if (allTemplateQuestions.length > 0) {
-        console.log(`[AI] Using ${allTemplateQuestions.length} questions from local templates.`);
-        return allTemplateQuestions;
+            return questions;
+        } catch (e) { 
+            console.error(`[Templates] Error parsing ${bestTemplate.name}:`, e); 
+        }
     }
 
     // 2. FALLBACK TO AI IF NO TEMPLATES
@@ -103,14 +96,12 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const targetLang = { 'en': 'English', 'hi': 'Hindi', 'bn': 'Bengali' }[language] || 'English';
-        
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
-            systemInstruction: "You are a Professional Medical Intake Assistant. Your goal is to collect a focused, medically-relevant history from a patient. Response MUST be a JSON array of 5-8 strings in the requested language script."
+            model: "gemini-pro"
         });
 
-        const prompt = `Patient complaint: "${complaint}". Language: ${targetLang}. Generate follow-up questions following SOCRATES/OPQRST framework.`;
+        const prompt = `You are a clinical assistant. Given a patient's complaint: "${complaint}", generate 6 targeted clinical follow-up questions in ${language}. Keep them short.`;
+        
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
         
@@ -133,8 +124,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
-            systemInstruction: "You are a Clinical Scribe. Summarize patient encounters into professional medical English history. Output MUST be valid JSON adhering strictly to the provided schema."
+            model: "gemini-pro"
         });
 
         const transcript = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
@@ -144,7 +134,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
 Based on the transcript and record findings provided below, synthesize a high-quality clinical note.
 
 CRITICAL REQUIREMENTS:
-- Use the Q&A transcript to build the 'history_of_presenting_illness'.
+- Use the Q&A transcript to build the 'history_of_complaint'.
 - Analyze the complaint and transcript to suggest 2-3 most relevant medications AND 2-3 diagnostic tests.
 - DO NOT leave suggested_medications/suggested_tests empty if the case warrants them.
 - Output MUST be valid JSON in the specified schema.
@@ -158,7 +148,7 @@ ${docsContext}
 JSON Schema:
 {
   "chief_complaint": "string",
-  "history_of_complaint": "professional medical English prose synthesized from the transcript",
+  "history_of_complaint": "professional medical English prose synthesized from the transcript (LIMIT TO 3 PARAGRAPHS)",
   "key_findings": ["item1", "item2"],
   "clinical_flags": ["alert1", "alert2"],
   "assessment_notes": "clinical assessment based on analysis",
