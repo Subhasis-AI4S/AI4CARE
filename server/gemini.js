@@ -14,12 +14,17 @@ const getApiKey = async (tenantId) => {
         const params = db.isPg ? [tenantId, tenantId] : [tenantId];
         const row = await db.get(query, params);
         
-        if (row && row.value) {
-            return row.value.trim();
+        const key = (row && row.value) ? row.value.trim() : '';
+
+        if (key) {
+            console.log(`[AI] Using API key from Settings dashboard (ending in ...${key.slice(-4)})`);
+        } else {
+            console.error(`[AI] No API key found in Settings for tenant ${tenantId}. Please go to Settings and enter your Gemini API Key.`);
         }
-        return '';
+        
+        return key;
     } catch (err) {
-        console.error("[Gemini] Error fetching API key:", err.message);
+        console.error("[Gemini] Error fetching API key from DB:", err.message);
         return '';
     }
 };
@@ -74,7 +79,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     const bestTemplate = scoredTemplates[0];
 
     if (bestTemplate) {
-        console.log(`[AI] Best match: "${bestTemplate.name}" (Score: ${bestTemplate.score})`);
+        console.log(`[AI] Template match: "${bestTemplate.name}" (Score: ${bestTemplate.score})`);
         try {
             let rawQs = bestTemplate.questions || '[]';
             let parsedQs = typeof rawQs === 'string' ? JSON.parse(rawQs) : rawQs;
@@ -97,10 +102,10 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-pro"
+            model: "gemini-1.5-flash"
         });
 
-        const prompt = `You are a clinical assistant. Given a patient's complaint: "${complaint}", generate 6 targeted clinical follow-up questions in ${language}. Keep them short.`;
+        const prompt = `You are a clinical assistant. Given a patient's complaint: "${complaint}", generate 6 targeted clinical follow-up questions in ${language}. Keep them short. Output as JSON array of strings.`;
         
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
@@ -108,7 +113,10 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         const jsonText = responseText.includes('[') ? responseText.substring(responseText.indexOf('['), responseText.lastIndexOf(']') + 1) : responseText;
         return JSON.parse(jsonText);
     } catch (e) {
-        console.error("[AI] Question generation failed:", e.message);
+        console.error("[AI] Generator Error (Questions):", e.message);
+        if (e.message.includes('404')) {
+            console.error("[AI] 404 Suggestion: Ensure 'Generative Language API' is enabled in your Google Cloud Project for this key.");
+        }
         return getGenericQuestions(language);
     }
 };
@@ -124,7 +132,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-pro"
+            model: "gemini-1.5-flash" 
         });
 
         const transcript = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
@@ -163,7 +171,7 @@ JSON Schema:
 
         return JSON.parse(result.response.text());
     } catch (e) {
-        console.error("[AI] Summary generation failed:", e.message);
+        console.error("[AI] Generator Error (Summary):", e.message);
         return getManualSummaryFallback(patient, complaint, qaPairs, documents);
     }
 };
@@ -178,13 +186,13 @@ const generateDocumentNote = async (filename, description, language = 'en', tena
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-pro",
-            systemInstruction: "Translate medical record descriptions into professional clinical notes in English."
+            model: "gemini-1.5-flash"
         });
 
-        const result = await model.generateContent(`Document: "${filename}". Native Description: "${description}".`);
+        const result = await model.generateContent(`Translate/Summarize medical record. Document: "${filename}". Native Description: "${description}". Output professional clinical note in English.`);
         return result.response.text();
     } catch (e) {
+        console.error("[AI] Document Analysis Error:", e.message);
         return `Record: ${filename}. Note: ${description}`;
     }
 };
