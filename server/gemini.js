@@ -70,7 +70,7 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }, { apiVersion: 'v1' });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1' });
 
         const prompt = `You are a clinical assistant. Given a patient's complaint: "${complaint}", generate 6 targeted clinical follow-up questions in ${language}. Keep them short. Output as JSON array of strings.`;
         const result = await model.generateContent(prompt);
@@ -92,7 +92,7 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }, { apiVersion: 'v1' });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1' });
 
         const transcript = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
         const docsContext = documents.map(d => `Document "${d.filename}": ${d.coordinator_note}`).join('\n');
@@ -145,7 +145,7 @@ const generateDocumentNote = async (filename, description, language = 'en', tena
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }, { apiVersion: 'v1' });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1' });
 
         const result = await model.generateContent(`Translate/Summarize medical record. Document: "${filename}". Native Description: "${description}". Output professional clinical note in English.`);
         return result.response.text();
