@@ -2,8 +2,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const db = require('./db/database');
 
 /**
- * getApiKey - Retrieves the Gemini API key for a specific tenant,
- * falling back to the default clinic ID if necessary.
+ * getApiKey - Retrieves the Gemini API key for a specific tenant.
  */
 const getApiKey = async (tenantId) => {
     try {
@@ -31,33 +30,19 @@ const getApiKey = async (tenantId) => {
 
 /**
  * generateQuestions - Generates follow-up clinical questions based on patient complaint.
- * PRIORITIZES local templates over AI to ensure high reliability.
  */
 const generateQuestions = async (complaint, language = 'en', tenantId) => {
-    // 1. MATCH LOCAL TEMPLATES
     const query = db.isPg 
         ? "SELECT * FROM templates WHERE tenant_id::text = ? OR tenant_id::text = 'default-clinic-id'"
         : "SELECT * FROM templates WHERE tenant_id = ? OR tenant_id = 'default-clinic-id'";
     const templates = await db.all(query, [tenantId]);
     const lowerComplaint = (complaint || '').toLowerCase();
     
-    // Improved matching logic with strict language partitioning
-    // 1. Filter and Score Templates
     let scoredTemplates = templates.map(t => {
         const tName = (t.name || '').toUpperCase();
         const targetLangUpper = (language || 'en').toUpperCase();
-        
-        let templateLang = 'EN'; 
-        if (tName.includes('(BN)')) {
-            templateLang = 'BN';
-        } else if (tName.includes('(HI)')) {
-            templateLang = 'HI';
-        }
-
-        const normalizedTargetLang = targetLangUpper === 'BENGALI' ? 'BN' : 
-                                     targetLangUpper === 'HINDI' ? 'HI' : 
-                                     targetLangUpper === 'EN' ? 'EN' : 
-                                     targetLangUpper.substring(0, 2);
+        let templateLang = tName.includes('(BN)') ? 'BN' : tName.includes('(HI)') ? 'HI' : 'EN';
+        const normalizedTargetLang = targetLangUpper === 'BENGALI' ? 'BN' : targetLangUpper === 'HINDI' ? 'HI' : targetLangUpper.substring(0, 2);
 
         if (templateLang !== normalizedTargetLang) return { score: 0 };
 
@@ -66,74 +51,47 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         keywords.forEach(k => {
             const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(^|\\P{L})${escapedK}(\\P{L}|$)`, 'iu');
-            if (regex.test(lowerComplaint)) {
-                score += k.length; // Priority to longer, more specific keywords
-            }
+            if (regex.test(lowerComplaint)) score += k.length;
         });
-
         return { ...t, score };
-    }).filter(t => t.score > 0)
-      .sort((a, b) => b.score - a.score);
+    }).filter(t => t.score > 0).sort((a, b) => b.score - a.score);
 
-    // 2. Pick the BEST single template match
     const bestTemplate = scoredTemplates[0];
-
     if (bestTemplate) {
         console.log(`[AI] Template match: "${bestTemplate.name}" (Score: ${bestTemplate.score})`);
         try {
-            let rawQs = bestTemplate.questions || '[]';
-            let parsedQs = typeof rawQs === 'string' ? JSON.parse(rawQs) : rawQs;
-            
-            const questions = (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => {
-                if (typeof q === 'string') return q;
-                return q[language] || q.en || '';
-            }).filter(q => q.trim().length > 0);
-
-            return questions;
-        } catch (e) { 
-            console.error(`[Templates] Error parsing ${bestTemplate.name}:`, e); 
-        }
+            let parsedQs = typeof bestTemplate.questions === 'string' ? JSON.parse(bestTemplate.questions) : bestTemplate.questions;
+            return (Array.isArray(parsedQs) ? parsedQs : [parsedQs]).map(q => typeof q === 'string' ? q : q[language] || q.en || '').filter(q => q.trim().length > 0);
+        } catch (e) { console.error(`[Templates] Error parsing ${bestTemplate.name}:`, e); }
     }
 
-    // 2. FALLBACK TO AI IF NO TEMPLATES
     const apiKey = await getApiKey(tenantId);
     if (!apiKey) return getGenericQuestions(language);
 
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash"
-        });
+        const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: "v1" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         const prompt = `You are a clinical assistant. Given a patient's complaint: "${complaint}", generate 6 targeted clinical follow-up questions in ${language}. Keep them short. Output as JSON array of strings.`;
-        
         const result = await model.generateContent(prompt);
-        const responseText = result.response.text();
-        
-        const jsonText = responseText.includes('[') ? responseText.substring(responseText.indexOf('['), responseText.lastIndexOf(']') + 1) : responseText;
+        const jsonText = result.response.text().includes('[') ? result.response.text().substring(result.response.text().indexOf('['), result.response.text().lastIndexOf(']') + 1) : result.response.text();
         return JSON.parse(jsonText);
     } catch (e) {
-        console.error("[AI] Generator Error (Questions):", e.message);
-        if (e.message.includes('404')) {
-            console.error("[AI] 404 Suggestion: Ensure 'Generative Language API' is enabled in your Google Cloud Project for this key.");
-        }
+        console.error("[AI] Questions Error:", e.message);
         return getGenericQuestions(language);
     }
 };
 
 /**
  * generateSummary - Creates a structured clinical summary from QA transcript and uploaded documents.
- * USES native JSON mode for maximum reliability.
  */
 const generateSummary = async (patient, complaint, qaPairs, documents, language = 'en', tenantId) => {
     const apiKey = await getApiKey(tenantId);
     if (!apiKey) return getManualSummaryFallback(patient, complaint, qaPairs, documents);
 
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash" 
-        });
+        const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: "v1" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         const transcript = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
         const docsContext = documents.map(d => `Document "${d.filename}": ${d.coordinator_note}`).join('\n');
@@ -171,7 +129,7 @@ JSON Schema:
 
         return JSON.parse(result.response.text());
     } catch (e) {
-        console.error("[AI] Generator Error (Summary):", e.message);
+        console.error("[AI] Summary Error:", e.message);
         return getManualSummaryFallback(patient, complaint, qaPairs, documents);
     }
 };
@@ -184,15 +142,13 @@ const generateDocumentNote = async (filename, description, language = 'en', tena
     if (!apiKey) return `Record: ${filename}. Context: ${description}`;
 
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash"
-        });
+        const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: "v1" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
         const result = await model.generateContent(`Translate/Summarize medical record. Document: "${filename}". Native Description: "${description}". Output professional clinical note in English.`);
         return result.response.text();
     } catch (e) {
-        console.error("[AI] Document Analysis Error:", e.message);
+        console.error("[AI] Doc Note Error:", e.message);
         return `Record: ${filename}. Note: ${description}`;
     }
 };
@@ -210,7 +166,7 @@ const getManualSummaryFallback = (patient, complaint, qaPairs, documents) => {
     const hpi = qaPairs.map(qa => `• ${qa.question}: ${qa.answer}`).join('\n') || "No transcript available.";
     return {
         chief_complaint: complaint,
-        history_of_presenting_illness: hpi,
+        history_of_complaint: hpi,
         key_findings: documents.map(d => d.coordinator_note || d.filename).filter(n => n),
         clinical_flags: ["Manual Assessment Required"],
         assessment_notes: "AI synthesis failed. Manual history provided.",
