@@ -124,11 +124,12 @@ JSON Schema:
 }`;
 
         const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
+            contents: [{ role: 'user', parts: [{ text: prompt }] }]
         });
 
-        return JSON.parse(result.response.text());
+        const responseText = result.response.text();
+        const jsonText = responseText.includes('{') ? responseText.substring(responseText.indexOf('{'), responseText.lastIndexOf('}') + 1) : responseText;
+        return JSON.parse(jsonText);
     } catch (e) {
         console.error("[AI] Summary Error:", e.message);
         return getManualSummaryFallback(patient, complaint, qaPairs, documents);
