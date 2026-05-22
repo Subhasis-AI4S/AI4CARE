@@ -17,7 +17,24 @@ async function runDiagnostic() {
             const data = await res.json();
             console.log(`\n--- ${version} Results ---`);
             if (data.models) {
-                console.log(data.models.map(m => m.name).join('\n'));
+                for (const m of data.models) {
+                    if (m.name.includes('embedding') || m.name.includes('aqa')) continue;
+                    
+                    // Probe each model for quota
+                    const probeUrl = `https://generativelanguage.googleapis.com/${version}/${m.name}:generateContent?key=${apiKey}`;
+                    const probeRes = await fetch(probeUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({ contents: [{ parts: [{ text: "hi" }] }] })
+                    });
+                    const probeData = await probeRes.json();
+                    
+                    if (probeRes.ok) {
+                        console.log(`[OK] ${m.name}`);
+                    } else {
+                        const msg = probeData.error ? probeData.error.message : 'Unknown error';
+                        console.log(`[FAIL] ${m.name}: ${msg.substring(0, 50)}...`);
+                    }
+                }
             } else {
                 console.log(`Error ${res.status}: ${JSON.stringify(data)}`);
             }
