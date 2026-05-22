@@ -128,7 +128,7 @@ JSON Schema:
         });
 
         const responseText = result.response.text();
-        const jsonText = responseText.includes('{') ? responseText.substring(responseText.indexOf('{'), responseText.lastIndexOf(']') + 1) : responseText;
+        const jsonText = responseText.includes('{') ? responseText.substring(responseText.indexOf('{'), responseText.lastIndexOf('}') + 1) : responseText;
         return JSON.parse(jsonText);
     } catch (e) {
         console.error("[AI] Summary Error:", e.message);
