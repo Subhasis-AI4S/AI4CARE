@@ -72,26 +72,40 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-flash",
-            generationConfig: { temperature: 0, maxOutputTokens: 150 }
+            generationConfig: { temperature: 0, maxOutputTokens: 1000 }
         }, { apiVersion: 'v1' });
 
-        const prompt = `Patient complaint: "${complaint}". Generate exactly 6 concise clinical follow-up questions in ${language}. Return ONLY a JSON array of strings: ["q1", "q2"]. NO markdown. NO prose.`;
+        const prompt = `Patient complaint: "${complaint}". Generate 6 clinical follow-up questions in ${language}. Output as JSON array of strings ONLY. Example: ["q1", "q2"]`;
         
-        // Use a Promise.race to enforce a 10s timeout for speed
         const aiPromise = model.generateContent(prompt);
         const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('AI Timeout')), 10000));
         
         const result = await Promise.race([aiPromise, timeoutPromise]);
-        const responseText = result.response.text();
+        let responseText = result.response.text();
         
-        // Robust Extraction using Regex
+        // Self-healing: If it starts with [ but doesn't end with ], try to close it
+        if (responseText.trim().startsWith('[') && !responseText.trim().endsWith(']')) {
+            console.warn("[Gemini] AI response cut off. Attempting self-healing...");
+            responseText = responseText.trim();
+            // Find last quote and close it
+            const lastQuote = responseText.lastIndexOf('"');
+            if (lastQuote !== -1) {
+                responseText = responseText.substring(0, lastQuote + 1) + ']';
+            } else {
+                responseText += '"]';
+            }
+        }
+
         const match = responseText.match(/\[[\s\S]*\]/);
         if (match) {
-            return JSON.parse(match[0]);
+            try {
+                return JSON.parse(match[0]);
+            } catch (pErr) {
+                console.error("[Gemini] JSON Parse Error after match:", pErr.message);
+            }
         }
         
-        // Final fallback if parsing failed despite match
-        console.warn("[Gemini] Regex failed to find array. Full response:", responseText);
+        console.warn("[Gemini] Failed to find valid array. Response:", responseText);
         return getGenericQuestions(language);
     } catch (e) {
         console.error("[AI] Questions Error:", e.message);
