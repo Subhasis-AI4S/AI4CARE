@@ -336,11 +336,11 @@ app.post('/api/sessions/:id/summary', authenticateToken, async (req, res) => {
             await db.run(`UPDATE summaries SET 
                     chief_complaint = ?, history_of_presenting_illness = ?, key_findings = ?, clinical_flags = ?, assessment_notes = ?, suggested_medications = ?, suggested_tests = ?, edited_by_coordinator = 1, updated_at = CURRENT_TIMESTAMP 
                     WHERE session_id::text = ? AND tenant_id::text = ?`,
-                [chief_complaint, history_of_presenting_illness, JSON.stringify(key_findings), JSON.stringify(clinical_flags), assessment_notes, suggested_medications, suggested_tests, sessionId, req.tenantId]);
+                [chief_complaint, history_of_presenting_illness, JSON.stringify(key_findings), JSON.stringify(clinical_flags), assessment_notes, JSON.stringify(suggested_medications), JSON.stringify(suggested_tests), sessionId, req.tenantId]);
             res.json({ success: true, updated: true });
         } else {
             const result = await db.run('INSERT INTO summaries (session_id, chief_complaint, history_of_presenting_illness, key_findings, clinical_flags, assessment_notes, suggested_medications, suggested_tests, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [sessionId, chief_complaint, history_of_presenting_illness, JSON.stringify(key_findings), JSON.stringify(clinical_flags), assessment_notes, suggested_medications, suggested_tests, req.tenantId]);
+                [sessionId, chief_complaint, history_of_presenting_illness, JSON.stringify(key_findings), JSON.stringify(clinical_flags), assessment_notes, JSON.stringify(suggested_medications), JSON.stringify(suggested_tests), req.tenantId]);
             res.json({ success: true, id: result.lastID });
         }
     } catch (err) {

@@ -112,15 +112,16 @@ ${transcript}
 Record Findings:
 ${docsContext}
 
-JSON Schema:
-{
+  "suggested_medications": ["Med 1 with dosage", "Med 2 with dosage"],
+  "suggested_tests": ["Test 1", "Test 2"]
+} {
   "chief_complaint": "string",
   "history_of_complaint": "professional medical English prose synthesized from the transcript (LIMIT TO 3 PARAGRAPHS)",
   "key_findings": ["item1", "item2"],
   "clinical_flags": ["alert1", "alert2"],
   "assessment_notes": "clinical assessment based on analysis",
-  "suggested_medications": "markdown list of 2-3 suggested medications",
-  "suggested_tests": "markdown list of 2-3 suggested diagnostic tests"
+  "suggested_medications": ["array of strings (e.g. ['Aspirin 325mg stat', 'Nitro sublingual'])"],
+  "suggested_tests": ["array of strings (e.g. ['D-Dimer', 'Troponin I'])"]
 }`;
 
         const result = await model.generateContent({
