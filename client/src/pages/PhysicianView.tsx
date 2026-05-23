@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
-import { Printer, AlertTriangle, ArrowLeft, Shield } from 'lucide-react';
+import { Printer, AlertTriangle, ArrowLeft, Shield, X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 const safeFormatDate = (dateStr: string | null | undefined, formatStr: string = 'MMMM dd, yyyy') => {
@@ -45,10 +45,16 @@ export const PhysicianView = () => {
                     try {
                         const rawMeds = resData.summary?.suggested_medications || '';
                         if (rawMeds) {
-                            if (rawMeds.trim().startsWith('[') || rawMeds.trim().startsWith('{')) {
-                                initialMeds = JSON.parse(rawMeds);
+                            const trimmed = rawMeds.trim();
+                            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                                try {
+                                    initialMeds = JSON.parse(trimmed);
+                                } catch (e) {
+                                    // Handle malformed {"a", "b"} seen in some AI outputs
+                                    initialMeds = trimmed.replace(/^[\\"{}[\]]*/, '').replace(/[\\"{}[\]]*$/, '').split('","').map((s: string) => s.trim()).filter(Boolean);
+                                }
                             } else {
-                                // Fallback for legacy plain text or AI markdown blocks
+                                // Fallback for legacy plain text
                                 initialMeds = rawMeds.split('\n')
                                     .map((m: string) => m.replace(/^[*•-]\s*/, '').replace(/^[\\"{}[\]]*/, '').replace(/[\\"{}[\]]*$/, '').trim())
                                     .filter((m: string) => m.length > 0);
@@ -65,8 +71,13 @@ export const PhysicianView = () => {
                     try {
                         const rawTests = resData.summary?.suggested_tests || '';
                         if (rawTests) {
-                            if (rawTests.trim().startsWith('[') || rawTests.trim().startsWith('{')) {
-                                initialTests = JSON.parse(rawTests);
+                            const trimmed = rawTests.trim();
+                            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                                try {
+                                    initialTests = JSON.parse(trimmed);
+                                } catch (e) {
+                                    initialTests = trimmed.replace(/^[\\"{}[\]]*/, '').replace(/[\\"{}[\]]*$/, '').split('","').map((s: string) => s.trim()).filter(Boolean);
+                                }
                             } else {
                                 initialTests = rawTests.split('\n')
                                     .map((t: string) => t.replace(/^[*•-]\s*/, '').replace(/^[\\"{}[\]]*/, '').replace(/[\\"{}[\]]*$/, '').trim())
@@ -280,7 +291,7 @@ export const PhysicianView = () => {
                                                 onClick={() => handleRemoveMed(i)}
                                                 className="opacity-0 group-hover:opacity-100 p-1 text-danger hover:bg-danger/10 rounded-md transition-all flex-shrink-0 h-fit"
                                             >
-                                                <AlertTriangle className="w-4 h-4" />
+                                                <X className="w-4 h-4" />
                                             </button>
                                         )}
                                     </div>

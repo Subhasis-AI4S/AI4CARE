@@ -112,17 +112,18 @@ ${transcript}
 Record Findings:
 ${docsContext}
 
-  "suggested_medications": ["Med 1 with dosage", "Med 2 with dosage"],
+  "suggested_medications": ["Med 1", "Med 2"],
   "suggested_tests": ["Test 1", "Test 2"]
 } {
   "chief_complaint": "string",
-  "history_of_complaint": "professional medical English prose synthesized from the transcript (LIMIT TO 3 PARAGRAPHS)",
+  "history_of_complaint": "clinical prose (LIMIT TO 3 PARAGRAPHS)",
   "key_findings": ["item1", "item2"],
   "clinical_flags": ["alert1", "alert2"],
   "assessment_notes": "clinical assessment based on analysis",
-  "suggested_medications": ["array of strings (e.g. ['Aspirin 325mg stat', 'Nitro sublingual'])"],
-  "suggested_tests": ["array of strings (e.g. ['D-Dimer', 'Troponin I'])"]
-}`;
+  "suggested_medications": ["Standard JSON array of strings (NO curly braces)"],
+  "suggested_tests": ["Standard JSON array of strings (NO curly braces)"]
+}
+CRITICAL: Do NOT wrap the lists in curly braces {}. ALWAYS use square brackets [].`;
 
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }]
