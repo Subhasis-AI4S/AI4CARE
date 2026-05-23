@@ -277,8 +277,8 @@ export const PhysicianView = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-2 border-text">
                         <div className="bg-surface p-8 rounded-2xl border-4 border-double border-accent/20 relative print:border-accent flex flex-col">
-                            <h2 className="text-xl font-bold text-accent uppercase tracking-wider mb-6 flex items-center">
-                                <span className="mr-3 text-4xl font-serif text-accent opacity-60">℞</span> Medications
+                            <h2 className="text-xl font-bold text-accent uppercase tracking-wider mb-6 flex items-center text-teal-700 dark:text-teal-400">
+                                <span className="mr-3 text-4xl font-serif text-accent opacity-60">℞</span> Recommended Medications
                             </h2>
                             
                             <div className="flex-grow space-y-3 mb-6">
@@ -317,7 +317,7 @@ export const PhysicianView = () => {
 
                         <div className="bg-surface p-8 rounded-2xl border-4 border-double border-indigo-600/20 relative print:border-indigo-900 flex flex-col">
                             <h2 className="text-xl font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider mb-6 flex items-center">
-                                Investigations
+                                Recommended Tests
                             </h2>
 
                             <div className="flex-grow space-y-3 mb-6">
@@ -330,7 +330,7 @@ export const PhysicianView = () => {
                                                 onClick={() => handleRemoveTest(i)}
                                                 className="opacity-0 group-hover:opacity-100 p-1 text-danger hover:bg-danger/10 rounded-md transition-all flex-shrink-0 h-fit"
                                             >
-                                                <AlertTriangle className="w-4 h-4" />
+                                                <X className="w-4 h-4" />
                                             </button>
                                         )}
                                     </div>

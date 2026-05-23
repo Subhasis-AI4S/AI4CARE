@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
-import { Printer, ArrowLeft, Download, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Printer, ArrowLeft, Download, FileText, AlertTriangle, CheckCircle2, Copy } from 'lucide-react';
 import { exportToPDF } from '../utils/pdfExport';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,6 +51,11 @@ export const SessionDetail = () => {
     const { session, qa = [], documents = [], summary } = data;
 
     const exportPdf = () => exportToPDF(data, clinicName, doctorName);
+
+    const copyToClipboard = (text: string, label: string) => {
+        navigator.clipboard.writeText(text);
+        toast.success(`${label} copied to clipboard`);
+    };
 
     const tabs = [
         { id: 'summary', name: 'Summary' },
@@ -165,10 +170,17 @@ export const SessionDetail = () => {
                                         <p className="text-xl font-bold text-text pb-2">{summary.chief_complaint || 'No complaint recorded.'}</p>
                                     </div>
                                     
-                                    <div className="bg-surface p-6 rounded-3xl border border-border mt-6">
+                                    <div className="bg-surface p-6 rounded-3xl border border-border mt-6 relative group">
                                         <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-4 flex items-center">
                                             <FileText className="w-3.5 h-3.5 mr-2" /> HISTORY OF PRESENTING ILLNESS
                                         </h3>
+                                        <button 
+                                            onClick={() => copyToClipboard(summary.history_of_presenting_illness || '', 'History')}
+                                            className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-background rounded-lg text-text-muted"
+                                            title="Copy History"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                        </button>
                                         <div className="prose dark:prose-invert max-w-none text-text text-[15px] leading-relaxed bg-background p-5 rounded-2xl border border-border">
                                             {(summary.history_of_presenting_illness?.split('\n') || []).map((p: string, i: number) => (
                                                 p.trim() && <p key={i} className="mb-3 last:mb-0">{p}</p>
@@ -177,27 +189,62 @@ export const SessionDetail = () => {
                                         </div>
                                     </div>
 
-                                    <div>
+                                    <div className="relative group">
                                         <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest mb-2">ASSESSMENT & CLINICAL NOTES</h3>
+                                        <button 
+                                            onClick={() => copyToClipboard(summary.assessment_notes || '', 'Notes')}
+                                            className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-background rounded-lg text-text-muted"
+                                            title="Copy Assessment"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                        </button>
                                         <p className="text-text leading-relaxed whitespace-pre-wrap">{summary.assessment_notes || 'No objective notes recorded.'}</p>
                                     </div>
 
                                     {(summary.suggested_medications || summary.suggested_tests) && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-border">
                                             {summary.suggested_medications && (
-                                                <div className="bg-teal-50/50 dark:bg-teal-900/10 p-5 rounded-xl border border-teal-100 dark:border-teal-900/30">
-                                                    <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest mb-2 flex items-center">
-                                                        Finalized Medications
+                                                <div className="bg-teal-50/50 dark:bg-teal-900/10 p-5 rounded-xl border border-teal-100 dark:border-teal-900/30 relative group">
+                                                    <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest mb-3 flex items-center">
+                                                        Recommended Medications
                                                     </h3>
-                                                    <p className="text-text leading-relaxed whitespace-pre-wrap">{summary.suggested_medications}</p>
+                                                    <button 
+                                                        onClick={() => copyToClipboard(getArrayData(summary.suggested_medications).join('\n'), 'Medications')}
+                                                        className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-teal-100 rounded-lg text-teal-700"
+                                                        title="Copy Medications"
+                                                    >
+                                                        <Copy className="w-4 h-4" />
+                                                    </button>
+                                                    <div className="space-y-2">
+                                                        {getArrayData(summary.suggested_medications).map((m: string, i: number) => (
+                                                            <div key={i} className="text-text text-sm flex gap-2">
+                                                                <span className="text-teal-500">•</span>
+                                                                <span>{m}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                             {summary.suggested_tests && (
-                                                <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-5 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
-                                                    <h3 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest mb-2 flex items-center">
+                                                <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-5 rounded-xl border border-indigo-100 dark:border-indigo-900/30 relative group">
+                                                    <h3 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest mb-3 flex items-center">
                                                         Recommended Tests
                                                     </h3>
-                                                    <p className="text-text leading-relaxed whitespace-pre-wrap">{summary.suggested_tests}</p>
+                                                    <button 
+                                                        onClick={() => copyToClipboard(getArrayData(summary.suggested_tests).join('\n'), 'Tests')}
+                                                        className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-indigo-100 rounded-lg text-indigo-700"
+                                                        title="Copy Tests"
+                                                    >
+                                                        <Copy className="w-4 h-4" />
+                                                    </button>
+                                                    <div className="space-y-2">
+                                                        {getArrayData(summary.suggested_tests).map((t: string, i: number) => (
+                                                            <div key={i} className="text-text text-sm flex gap-2">
+                                                                <span className="text-indigo-500">•</span>
+                                                                <span>{t}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
