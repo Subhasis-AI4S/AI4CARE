@@ -70,10 +70,18 @@ const generateQuestions = async (complaint, language = 'en', tenantId) => {
 
     try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: 'v1' });
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash",
+            generationConfig: { temperature: 0, maxOutputTokens: 150 }
+        }, { apiVersion: 'v1' });
 
-        const prompt = `You are a clinical assistant. Given a patient's complaint: "${complaint}", generate 6 targeted clinical follow-up questions in ${language}. Keep them short. Output as JSON array of strings.`;
-        const result = await model.generateContent(prompt);
+        const prompt = `Patient complaint: "${complaint}". Generate exactly 6 concise clinical follow-up questions in ${language}. Return JSON array of strings only.`;
+        
+        // Use a Promise.race to enforce a 10s timeout for speed
+        const aiPromise = model.generateContent(prompt);
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('AI Timeout')), 10000));
+        
+        const result = await Promise.race([aiPromise, timeoutPromise]);
         const responseText = result.response.text();
         const jsonText = responseText.includes('[') ? responseText.substring(responseText.indexOf('['), responseText.lastIndexOf(']') + 1) : responseText;
         return JSON.parse(jsonText);
