@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isSameDay, isValid } from 'date-fns';
 import { Search, Eye, Trash2, SlidersHorizontal, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { StatusBadge } from './Dashboard';
@@ -29,6 +29,7 @@ export const SessionHistory = () => {
     // Get status from URL if present
     const queryParams = new URLSearchParams(location.search);
     const initialStatus = queryParams.get('status') || 'all';
+    const dateFilter = queryParams.get('date');
     const [statusFilter, setStatusFilter] = useState(initialStatus);
 
     const fetchSessions = async () => {
@@ -92,8 +93,19 @@ export const SessionHistory = () => {
         if (statusFilter === 'in_progress' && s.status === 'processing') {
             matchesStatus = true;
         }
+
+        // Date filtering
+        let matchesDate = true;
+        if (dateFilter === 'today') {
+            try {
+                const sessionDate = parseISO(s.created_at);
+                matchesDate = isValid(sessionDate) && isSameDay(sessionDate, new Date());
+            } catch (e) {
+                matchesDate = false;
+            }
+        }
         
-        return matchesSearch && matchesStatus;
+        return matchesSearch && matchesStatus && matchesDate;
     });
 
     return (

@@ -150,7 +150,7 @@ export const Dashboard = () => {
                 className="grid grid-cols-1 md:grid-cols-4 gap-6"
             >
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                    <Link to="/sessions" className="block transform transition-all hover:scale-[1.02] active:scale-[0.98]">
+                    <Link to="/sessions?date=today" className="block transform transition-all hover:scale-[1.02] active:scale-[0.98]">
                         <MetricCard 
                             title={t('dashboard_flow.today_sessions')} 
                             value={stats.totalToday} 
