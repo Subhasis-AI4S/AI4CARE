@@ -116,42 +116,23 @@ const Sidebar = () => {
         </ul>
       </div>
 
-      <div className="mx-4 mb-6 p-4 rounded-[2rem] bg-surface border border-border shadow-2xl shadow-indigo-500/5 relative group overflow-hidden transition-premium hover:border-accent/40">
-        <div className="absolute top-0 right-0 w-16 h-16 bg-accent/5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-700 blur-xl" />
-        <div className="relative z-10 flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-primary flex items-center justify-center text-white font-black text-lg shadow-xl shadow-accent/20 shrink-0 transform group-hover:rotate-6 transition-transform">
-                  {user?.fullName?.charAt(0) || 'D'}
-              </div>
-              <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-black text-text truncate uppercase tracking-widest">{user?.fullName || 'User'}</div>
-                  <div className="text-[9px] font-black text-text-muted truncate uppercase tracking-widest opacity-60 mt-0.5">{clinicName}</div>
-              </div>
-          </div>
-          
-          <div className="flex items-center justify-between pt-3 border-t border-border/50">
-            <div className="flex items-center gap-1.5">
-              <button 
-                onClick={toggleTheme} 
-                className="p-2 rounded-xl bg-background hover:bg-surface text-text-muted hover:text-accent border border-border/50 transition-premium shadow-sm active:scale-95"
-                title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-              >
-                {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-warning" /> : <Moon className="w-3.5 h-3.5" />}
-              </button>
-              <div className="w-px h-4 bg-border/50 mx-0.5" />
-              <button 
-                onClick={handleLogout} 
-                className="p-2 rounded-xl bg-background hover:bg-danger/10 text-text-muted hover:text-danger border border-border/50 transition-premium shadow-sm active:scale-95"
-                title="Sign Out"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
+      <div className="mx-4 mb-8 p-3 rounded-2xl glass-card flex items-center justify-between gap-3 border border-white/10 shadow-lg">
+        <div className="flex items-center gap-3 overflow-hidden flex-1">
+            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white shadow-lg shadow-accent/20 shrink-0">
+                <Stethoscope className="w-5 h-5" />
             </div>
-            
-            <div className="bg-accent/5 px-2.5 py-1 rounded-full border border-accent/10">
-                <span className="text-[8px] font-black text-accent uppercase tracking-tighter">Verified</span>
+            <div className="min-w-0">
+                <div className="text-[11px] font-black text-text truncate uppercase tracking-widest">{user?.fullName || 'User'}</div>
+                <div className="text-[8px] font-bold text-text-muted truncate uppercase tracking-tighter opacity-60">{clinicName}</div>
             </div>
-          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-white/5 text-text-muted transition-premium">
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-warning" /> : <Moon className="w-3.5 h-3.5" />}
+          </button>
+          <button onClick={handleLogout} className="p-2 rounded-lg hover:bg-danger/10 text-danger transition-premium">
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </div>
