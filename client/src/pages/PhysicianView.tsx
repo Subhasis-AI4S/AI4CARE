@@ -207,6 +207,15 @@ export const PhysicianView = () => {
                     </button>
                 </div>
 
+                {/* RMP Clinical Governance Disclaimer */}
+                <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs flex items-start gap-3 shadow-sm print:hidden">
+                    <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                        <p className="font-bold uppercase tracking-wider text-[11px] mb-0.5">Clinical Decision Support Notice (Telemedicine Practice Guidelines 2020)</p>
+                        <p className="leading-relaxed opacity-90">This AI-synthesized consultation summary is intended solely for review and validation by a Registered Medical Practitioner (RMP). Diagnostic assessment, prescriptions, and order authorizations remain the sole legal responsibility of the attending physician.</p>
+                    </div>
+                </div>
+
                 {/* Document Header */}
                 <div className="border-b-4 border-text pb-6 mb-8 flex justify-between items-end">
                     <div>

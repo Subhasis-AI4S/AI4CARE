@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
-import { Printer, ArrowLeft, Download, FileText, AlertTriangle, CheckCircle2, Copy } from 'lucide-react';
+import { Printer, ArrowLeft, Download, FileText, AlertTriangle, CheckCircle2, Copy, Shield } from 'lucide-react';
 import { exportToPDF } from '../utils/pdfExport';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -130,6 +130,15 @@ export const SessionDetail = () => {
                                 <div className="text-center py-12 text-text-muted">No summary available for this session.</div>
                             ) : (
                                 <>
+                                    {/* RMP Clinical Governance Disclaimer Notice */}
+                                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs flex items-start gap-3 shadow-sm">
+                                        <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="font-bold uppercase tracking-wider text-[10px] mb-0.5">Clinical Decision Support Disclaimer (Telemedicine Guidelines 2020)</p>
+                                            <p className="leading-relaxed opacity-90">This AI-assisted intake summary is formulated for review by a Registered Medical Practitioner (RMP). Diagnostic evaluations and prescriptions must be validated by the RMP.</p>
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                                         {flags.length > 0 && (
                                             <div className="bg-rose-50/50 dark:bg-rose-950/10 border border-rose-100 dark:border-rose-900/30 rounded-3xl p-6 shadow-sm">

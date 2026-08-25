@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Stethoscope, Mail, Lock, AlertCircle, ArrowRight, Loader2, Hospital, User } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
+import { PrivacyModal } from '../components/PrivacyModal';
+
 export const Register = () => {
     const [formData, setFormData] = useState({
         clinicName: '',
@@ -13,9 +15,11 @@ export const Register = () => {
     });
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPrivacy, setShowPrivacy] = useState(false);
     
     const navigate = useNavigate();
     const { login, fetchWithCsrf } = useAppContext();
+
  
      const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
          setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -196,16 +200,29 @@ export const Register = () => {
                         </div>
                     </form>
 
-                    <div className="mt-6 pt-6 border-t border-border text-center">
+                    <div className="mt-6 pt-6 border-t border-border text-center flex flex-col gap-2">
                         <p className="text-text-muted font-medium">
                             Already registered?{' '}
                             <Link to="/login" className="text-teal-600 font-bold hover:text-teal-700 transition-colors ml-1">
                                 Sign In
                             </Link>
                         </p>
+                        <p className="text-xs text-text-muted">
+                            By registering, you agree to our{' '}
+                            <button 
+                                type="button" 
+                                onClick={() => setShowPrivacy(true)} 
+                                className="text-teal-600 font-bold hover:underline"
+                            >
+                                Privacy Policy & DPDP Terms
+                            </button>
+                        </p>
                     </div>
                 </div>
+
+                <PrivacyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
             </div>
         </div>
     );
 };
+

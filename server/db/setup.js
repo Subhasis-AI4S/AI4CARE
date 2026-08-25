@@ -109,15 +109,18 @@ const setupDatabase = async () => {
         }
     } catch (e) { /* index already exists — fine */ }
 
-    // Settings — composite primary key (key + tenant_id)
-    await db.run(`CREATE TABLE IF NOT EXISTS settings (
-        key TEXT NOT NULL,
-        value TEXT,
-        tenant_id TEXT NOT NULL DEFAULT 'default-clinic-id',
-        PRIMARY KEY (key, tenant_id)
+    // Audit Logs (DPDP Act 2023 & IT Act Compliance)
+    await db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
+        id ${pk},
+        tenant_id TEXT,
+        user_id TEXT,
+        action TEXT NOT NULL,
+        details TEXT,
+        ip_address TEXT,
+        created_at TIMESTAMP DEFAULT ${now}
     )`);
 
-    console.log('✓ Database schema initialized.');
+    console.log('✓ Database schema initialized (including Audit Logs).');
 };
 
 const seedDatabase = async () => {

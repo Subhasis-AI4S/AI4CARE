@@ -258,6 +258,17 @@ app.put('/api/sessions/:id', authenticateToken, async (req, res) => {
     }
 });
 
+const logAuditEvent = async (tenantId, userId, action, details = '', ipAddress = '') => {
+    try {
+        await db.run(
+            'INSERT INTO audit_logs (tenant_id, user_id, action, details, ip_address) VALUES (?, ?, ?, ?, ?)',
+            [tenantId || 'system', userId || 'anonymous', action, details, ipAddress]
+        );
+    } catch (err) {
+        console.warn('[Audit Log Warning]', err.message);
+    }
+};
+
 app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
     const sessionId = req.params.id;
 
@@ -276,6 +287,9 @@ app.delete('/api/sessions/:id', authenticateToken, async (req, res) => {
             const result = await tx.run('DELETE FROM sessions WHERE id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
             if (result.changes === 0) throw new Error('Failed to delete session record');
         });
+
+        // Audit log the erasure (DPDP Act Compliance)
+        await logAuditEvent(req.tenantId, req.userId, 'SESSION_DATA_ERASED', `Permanently erased session ID ${sessionId}`, req.ip);
 
         res.json({ success: true, message: "Session and all associated data deleted successfully" });
     } catch (err) {

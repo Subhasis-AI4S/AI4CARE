@@ -4,6 +4,8 @@ import { Stethoscope, Mail, Lock, AlertCircle, ArrowRight, Loader2, Activity } f
 import { useAppContext } from '../context/AppContext';
 import { useTranslation } from 'react-i18next';
 
+import { PrivacyModal } from '../components/PrivacyModal';
+
 export const Login = () => {
     const { t } = useTranslation();
     const location = useLocation();
@@ -13,9 +15,11 @@ export const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPrivacy, setShowPrivacy] = useState(false);
     
     const navigate = useNavigate();
     const { login, fetchWithCsrf } = useAppContext();
+
  
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -165,9 +169,19 @@ export const Login = () => {
                 </div>
                 
                 <p className="text-center text-text-muted text-xs mt-8 font-medium">
-                    &copy; 2024 AI4CARE SaaS v1.0. All clinical data is encrypted.
+                    &copy; 2024 AI4CARE SaaS v1.0. All clinical data is encrypted.{' '}
+                    <button 
+                        type="button" 
+                        onClick={() => setShowPrivacy(true)} 
+                        className="text-teal-600 dark:text-teal-400 font-bold hover:underline ml-1"
+                    >
+                        Privacy Policy & Terms (DPDP)
+                    </button>
                 </p>
+
+                <PrivacyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
             </div>
         </div>
     );
 };
+
