@@ -165,6 +165,21 @@ router.post('/investigations', authenticateToken, async (req, res) => {
     }
 });
 
+// PUT — Update an investigation template
+router.put('/investigations/:id', authenticateToken, async (req, res) => {
+    const { name, category, sub_category, description, normal_range } = req.body;
+    try {
+        await db.run(
+            `UPDATE investigation_templates SET name=?, category=?, sub_category=?, description=?, normal_range=?
+             WHERE id=? AND tenant_id=?`,
+            [name, category, sub_category || '', description || '', normal_range || '', req.params.id, req.tenantId]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // DELETE — Remove an investigation template
 router.delete('/investigations/:id', authenticateToken, async (req, res) => {
     try {
@@ -176,16 +191,24 @@ router.delete('/investigations/:id', authenticateToken, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// RESPIRATORY SUGGESTIVE Q&A TEMPLATES
+// RESPIRATORY DISEASE SUGGESTIVE Q&A TEMPLATES
 // ─────────────────────────────────────────────
 
-// GET — Return ordered question tree with parsed options
+// GET — Return ordered question tree with parsed options (supports ?disease= or ?category=)
 router.get('/respiratory-questions', authenticateToken, async (req, res) => {
     try {
-        const rows = await db.all(
-            'SELECT * FROM respiratory_question_templates WHERE (tenant_id = ? OR tenant_id IS NULL OR tenant_id = ?) AND is_active = 1 ORDER BY order_index ASC',
-            [req.tenantId, 'global']
-        );
+        const { disease, category } = req.query;
+        let sql = 'SELECT * FROM respiratory_question_templates WHERE (tenant_id = ? OR tenant_id IS NULL OR tenant_id = ?) AND is_active = 1';
+        const params = [req.tenantId, 'global'];
+
+        const filterVal = disease || category;
+        if (filterVal && filterVal !== 'all') {
+            sql += ' AND (category = ? OR category = ?)';
+            params.push(filterVal, 'general');
+        }
+
+        sql += ' ORDER BY order_index ASC';
+        const rows = await db.all(sql, params);
         const questions = rows.map(row => ({
             ...row,
             options: row.options ? JSON.parse(row.options) : []
@@ -206,7 +229,32 @@ router.post('/respiratory-questions', authenticateToken, async (req, res) => {
              VALUES (?, ?, ?, ?, ?, ?)`,
             [question_text, category || 'general', input_type || 'single_select', JSON.stringify(options || []), order_index || 0, req.tenantId]
         );
-        res.json({ id: result.lastID || result.id, question_text });
+        res.json({ id: result.lastID || result.id, question_text, category });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PUT — Update a question template
+router.put('/respiratory-questions/:id', authenticateToken, async (req, res) => {
+    const { question_text, category, input_type, options, order_index } = req.body;
+    try {
+        await db.run(
+            `UPDATE respiratory_question_templates SET question_text=?, category=?, input_type=?, options=?, order_index=?
+             WHERE id=? AND tenant_id=?`,
+            [question_text, category || 'general', input_type || 'single_select', JSON.stringify(options || []), order_index || 0, req.params.id, req.tenantId]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE — Remove a question template
+router.delete('/respiratory-questions/:id', authenticateToken, async (req, res) => {
+    try {
+        await db.run('DELETE FROM respiratory_question_templates WHERE id=? AND tenant_id=?', [req.params.id, req.tenantId]);
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

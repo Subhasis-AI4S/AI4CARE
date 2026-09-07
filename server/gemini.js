@@ -127,14 +127,16 @@ const generateSummary = async (patient, complaint, qaPairs, documents, language 
         const transcript = qaPairs.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n');
         const docsContext = documents.map(d => `Document "${d.filename}": ${d.coordinator_note}`).join('\n');
 
-        const prompt = `You are a Clinical Associate analyzing an encounter for ${patient.name} (${patient.age}y, ${patient.gender}).
+        const prompt = `You are a Clinical Associate synthesizing an encounter for ${patient.name} (${patient.age}y, ${patient.gender}).
 Based on the transcript and record findings provided below, synthesize a high-quality clinical note.
 
 CRITICAL REQUIREMENTS:
-- Use the Q&A transcript to build the 'history_of_complaint'.
-- Analyze the complaint and transcript to suggest 2-3 most relevant medications AND 2-3 diagnostic tests.
-- DO NOT leave suggested_medications/suggested_tests empty if the case warrants them.
-- Output MUST be valid JSON in the specified schema.
+- Use the Q&A transcript to build a coherent, comprehensive 'history_of_presenting_illness'.
+- Extract key clinical observations into 'key_findings'.
+- Flag critical red flags (e.g., hemoptysis, severe hypoxia, night sweats/weight loss) into 'clinical_flags'.
+- Provide clinical assessment notes in 'assessment_notes'.
+- DO NOT recommend or suggest any medications or laboratory/imaging tests. Medication prescribing and test ordering are strictly reserved for the attending physician via clinical templates.
+- Output MUST be valid JSON adhering strictly to the schema below.
 
 Chief Complaint: ${complaint}
 Transcript: 
@@ -142,18 +144,14 @@ ${transcript}
 Record Findings:
 ${docsContext}
 
-  "suggested_medications": ["Med 1", "Med 2"],
-  "suggested_tests": ["Test 1", "Test 2"]
-} {
+JSON OUTPUT SCHEMA:
+{
   "chief_complaint": "string",
-  "history_of_complaint": "clinical prose (LIMIT TO 3 PARAGRAPHS)",
+  "history_of_presenting_illness": "clinical prose (structured, clear chronological narrative)",
   "key_findings": ["item1", "item2"],
   "clinical_flags": ["alert1", "alert2"],
-  "assessment_notes": "clinical assessment based on analysis",
-  "suggested_medications": ["Standard JSON array of strings (NO curly braces)"],
-  "suggested_tests": ["Standard JSON array of strings (NO curly braces)"]
-}
-CRITICAL: Do NOT wrap the lists in curly braces {}. ALWAYS use square brackets [].`;
+  "assessment_notes": "clinical observations and differential synthesis"
+}`;
 
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }]
@@ -161,7 +159,16 @@ CRITICAL: Do NOT wrap the lists in curly braces {}. ALWAYS use square brackets [
 
         const responseText = result.response.text();
         const jsonText = responseText.includes('{') ? responseText.substring(responseText.indexOf('{'), responseText.lastIndexOf('}') + 1) : responseText;
-        return JSON.parse(jsonText);
+        const parsed = JSON.parse(jsonText);
+        return {
+            chief_complaint: parsed.chief_complaint || complaint,
+            history_of_presenting_illness: parsed.history_of_presenting_illness || parsed.history_of_complaint || '',
+            key_findings: parsed.key_findings || [],
+            clinical_flags: parsed.clinical_flags || [],
+            assessment_notes: parsed.assessment_notes || '',
+            suggested_medications: '',
+            suggested_tests: ''
+        };
     } catch (e) {
         console.error("[AI] Summary Error:", e.message);
         return getManualSummaryFallback(patient, complaint, qaPairs, documents);
