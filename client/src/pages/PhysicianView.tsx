@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
-import { Printer, AlertTriangle, ArrowLeft, Shield, X } from 'lucide-react';
+import { Printer, AlertTriangle, ArrowLeft, Shield } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { PrescriptionTemplateBuilder } from '../components/PrescriptionTemplateBuilder';
+import { MedicationContinuationTracker } from '../components/MedicationContinuationTracker';
+import { PatientPastHistoryModule } from '../components/PatientPastHistoryModule';
 
 const safeFormatDate = (dateStr: string | null | undefined, formatStr: string = 'MMMM dd, yyyy') => {
     if (!dateStr) return 'N/A';
@@ -22,8 +25,6 @@ export const PhysicianView = () => {
     const [saving, setSaving] = useState(false);
     const [meds, setMeds] = useState<string[]>([]);
     const [tests, setTests] = useState<string[]>([]);
-    const [newMed, setNewMed] = useState('');
-    const [newTest, setNewTest] = useState('');
 
     useEffect(() => {
         if (!user || !fetchWithCsrf) return;
@@ -93,26 +94,6 @@ export const PhysicianView = () => {
                 setLoading(false);
             })
     }, [id, user]);
-
-    const handleAddMed = () => {
-        if (!newMed.trim()) return;
-        setMeds([...meds, newMed.trim()]);
-        setNewMed('');
-    };
-
-    const handleAddTest = () => {
-        if (!newTest.trim()) return;
-        setTests([...tests, newTest.trim()]);
-        setNewTest('');
-    };
-
-    const handleRemoveMed = (index: number) => {
-        setMeds(meds.filter((_, i) => i !== index));
-    };
-
-    const handleRemoveTest = (index: number) => {
-        setTests(tests.filter((_, i) => i !== index));
-    };
 
     const handleSaveRecommendations = async () => {
         if (!fetchWithCsrf) return;
@@ -284,83 +265,66 @@ export const PhysicianView = () => {
                         <p className="text-lg leading-relaxed whitespace-pre-wrap text-text">{summary.assessment_notes || 'No objective notes recorded.'}</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-2 border-text">
+                    {/* Patient Past Medical History Section */}
+                    {session.patient_id && (
+                        <div className="pt-2">
+                            <PatientPastHistoryModule patientId={session.patient_id} />
+                        </div>
+                    )}
+
+                    {/* Patient Home / Current Medications Continuation Tracker */}
+                    {session.patient_id && (
+                        <div className="pt-2">
+                            <MedicationContinuationTracker patientId={session.patient_id} />
+                        </div>
+                    )}
+
+                    {/* Interactive Prescription & Investigation Builder (Doctor Mode) */}
+                    {isDoctor ? (
+                        <div className="pt-2 print:hidden">
+                            <PrescriptionTemplateBuilder
+                                initialMeds={meds}
+                                initialTests={tests}
+                                onMedsChange={setMeds}
+                                onTestsChange={setTests}
+                            />
+                        </div>
+                    ) : null}
+
+                    {/* Prescription & Test Orders (Print & Summary Display) */}
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t-2 border-text ${isDoctor ? 'hidden print:grid' : 'grid'}`}>
                         <div className="bg-surface p-8 rounded-2xl border-4 border-double border-accent/20 relative print:border-accent flex flex-col">
                             <h2 className="text-xl font-bold text-accent uppercase tracking-wider mb-6 flex items-center text-teal-700 dark:text-teal-400">
-                                <span className="mr-3 text-4xl font-serif text-accent opacity-60">℞</span> Recommended Medications
+                                <span className="mr-3 text-4xl font-serif text-accent opacity-60">℞</span> Prescribed Medications
                             </h2>
                             
                             <div className="flex-grow space-y-3 mb-6">
                                 {meds.length > 0 ? meds.map((m, i) => (
-                                    <div key={i} className="group relative flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-accent/10 hover:border-accent/40 transition-all">
+                                    <div key={i} className="group relative flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-accent/10">
                                         <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />
                                         <span className="text-lg text-text flex-grow leading-snug">{m}</span>
-                                        {isDoctor && (
-                                            <button 
-                                                onClick={() => handleRemoveMed(i)}
-                                                className="opacity-0 group-hover:opacity-100 p-1 text-danger hover:bg-danger/10 rounded-md transition-all flex-shrink-0 h-fit"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        )}
                                     </div>
                                 )) : (
-                                    <p className="text-text-muted italic opacity-50">No medications selected.</p>
+                                    <p className="text-text-muted italic opacity-50">No medications prescribed.</p>
                                 )}
                             </div>
-
-                            {isDoctor && (
-                                <div className="mt-auto flex gap-2 pt-4 border-t border-accent/5">
-                                    <input 
-                                        type="text" 
-                                        value={newMed}
-                                        onChange={(e) => setNewMed(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleAddMed()}
-                                        placeholder="Add medication..."
-                                        className="flex-grow bg-white dark:bg-slate-800 border-none rounded-lg px-4 py-2 text-sm focus:ring-1 focus:ring-accent"
-                                    />
-                                    <button onClick={handleAddMed} className="bg-accent text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-accent-dark transition-colors">ADD</button>
-                                </div>
-                            )}
                         </div>
 
                         <div className="bg-surface p-8 rounded-2xl border-4 border-double border-indigo-600/20 relative print:border-indigo-900 flex flex-col">
                             <h2 className="text-xl font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider mb-6 flex items-center">
-                                Recommended Tests
+                                Ordered Investigations
                             </h2>
 
                             <div className="flex-grow space-y-3 mb-6">
                                 {tests.length > 0 ? tests.map((t, i) => (
-                                    <div key={i} className="group relative flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-indigo-600/10 hover:border-indigo-600/40 transition-all">
+                                    <div key={i} className="group relative flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-indigo-600/10">
                                         <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 flex-shrink-0" />
                                         <span className="text-lg text-text flex-grow leading-snug">{t}</span>
-                                        {isDoctor && (
-                                            <button 
-                                                onClick={() => handleRemoveTest(i)}
-                                                className="opacity-0 group-hover:opacity-100 p-1 text-danger hover:bg-danger/10 rounded-md transition-all flex-shrink-0 h-fit"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        )}
                                     </div>
                                 )) : (
-                                    <p className="text-text-muted italic opacity-50">No tests recommended.</p>
+                                    <p className="text-text-muted italic opacity-50">No tests ordered.</p>
                                 )}
                             </div>
-
-                            {isDoctor && (
-                                <div className="mt-auto flex gap-2 pt-4 border-t border-indigo-600/5">
-                                    <input 
-                                        type="text" 
-                                        value={newTest}
-                                        onChange={(e) => setNewTest(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleAddTest()}
-                                        placeholder="Add test..."
-                                        className="flex-grow bg-white dark:bg-slate-800 border-none rounded-lg px-4 py-2 text-sm focus:ring-1 focus:ring-indigo-600"
-                                    />
-                                    <button onClick={handleAddTest} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-indigo-700 transition-colors">ADD</button>
-                                </div>
-                            )}
                         </div>
                     </div>
 

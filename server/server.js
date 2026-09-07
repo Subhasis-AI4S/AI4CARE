@@ -11,6 +11,8 @@ const multer = require('multer');
 const { authenticateToken } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 const superadminRoutes = require('./routes/superadmin');
+const clinicalTemplatesRoutes = require('./routes/clinical_templates');
+const patientHistoryRoutes = require('./routes/patient_history');
 const { addSummaryJob } = require('./utils/queue');
 const storageService = require('./utils/storage');
 // Start the worker
@@ -38,6 +40,10 @@ async function initializeDatabase() {
 
         const migrateTemplates = require('./db/migrate_templates');
         await migrateTemplates();
+
+        // Seed Respiratory Clinical Module (medications, investigations, Q&A questions)
+        const seedRespiratory = require('./db/seed_respiratory');
+        await seedRespiratory();
 
         // 5. Seed Default Super Admin
         try {
@@ -132,6 +138,10 @@ app.use('/api', csrfProtection);
 
 // Super Admin Routes
 app.use('/api/superadmin', superadminRoutes);
+
+// Respiratory Clinical Module Routes
+app.use('/api/templates', clinicalTemplatesRoutes);
+app.use('/api/patients/:id', patientHistoryRoutes);
 
 // Patients API
 app.get('/api/patients', authenticateToken, async (req, res) => {

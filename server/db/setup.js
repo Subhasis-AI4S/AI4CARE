@@ -109,6 +109,14 @@ const setupDatabase = async () => {
         }
     } catch (e) { /* index already exists — fine */ }
 
+    // Settings
+    await db.run(`CREATE TABLE IF NOT EXISTS settings (
+        key TEXT,
+        value TEXT,
+        tenant_id TEXT,
+        PRIMARY KEY (key, tenant_id)
+    )`);
+
     // Audit Logs (DPDP Act 2023 & IT Act Compliance)
     await db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
         id ${pk},
@@ -120,7 +128,83 @@ const setupDatabase = async () => {
         created_at TIMESTAMP DEFAULT ${now}
     )`);
 
-    console.log('✓ Database schema initialized (including Audit Logs).');
+    // Medication Templates (Predefined Respiratory Drug Library)
+    await db.run(`CREATE TABLE IF NOT EXISTS medication_templates (
+        id ${pk},
+        name TEXT NOT NULL,
+        generic_name TEXT,
+        category TEXT,
+        dosage TEXT,
+        route TEXT DEFAULT 'oral',
+        frequency TEXT,
+        default_duration TEXT,
+        notes TEXT,
+        is_custom INTEGER DEFAULT 0,
+        tenant_id TEXT,
+        created_at TIMESTAMP DEFAULT ${now}
+    )`);
+
+    // Investigation Templates (Predefined Respiratory Tests)
+    await db.run(`CREATE TABLE IF NOT EXISTS investigation_templates (
+        id ${pk},
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        sub_category TEXT,
+        description TEXT,
+        normal_range TEXT,
+        tenant_id TEXT,
+        created_at TIMESTAMP DEFAULT ${now}
+    )`);
+
+    // Respiratory Suggestive Q&A Question Templates
+    await db.run(`CREATE TABLE IF NOT EXISTS respiratory_question_templates (
+        id ${pk},
+        question_text TEXT NOT NULL,
+        category TEXT,
+        input_type TEXT DEFAULT 'single_select',
+        options TEXT,
+        order_index INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1,
+        tenant_id TEXT,
+        created_at TIMESTAMP DEFAULT ${now}
+    )`);
+
+    // Patient Past History (Diseases, Conditions, Comorbidities)
+    await db.run(`CREATE TABLE IF NOT EXISTS patient_past_history (
+        id ${pk},
+        patient_id INTEGER NOT NULL,
+        condition_name TEXT NOT NULL,
+        condition_category TEXT DEFAULT 'respiratory',
+        diagnosis_year TEXT,
+        status TEXT DEFAULT 'ongoing',
+        notes TEXT,
+        document_path TEXT,
+        document_name TEXT,
+        tenant_id TEXT,
+        created_at TIMESTAMP DEFAULT ${now},
+        updated_at TIMESTAMP DEFAULT ${now}
+    )`);
+
+    // Patient Home Medications (Current Medications + Continuation Tracking)
+    await db.run(`CREATE TABLE IF NOT EXISTS patient_home_medications (
+        id ${pk},
+        patient_id INTEGER NOT NULL,
+        medication_name TEXT NOT NULL,
+        dosage TEXT,
+        frequency TEXT,
+        route TEXT DEFAULT 'oral',
+        prescribed_by TEXT,
+        start_date TEXT,
+        continuation_status TEXT DEFAULT 'continuing',
+        stop_date TEXT,
+        stop_reason TEXT,
+        notes TEXT,
+        tenant_id TEXT,
+        created_at TIMESTAMP DEFAULT ${now},
+        updated_at TIMESTAMP DEFAULT ${now}
+    )`);
+
+    console.log('✓ Database schema initialized (including Audit Logs, Respiratory Clinical Module).');
 };
 
 const seedDatabase = async () => {
