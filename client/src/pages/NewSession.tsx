@@ -486,26 +486,27 @@ export const NewSession = () => {
                             </div>
                         </div>
                         <SuggestiveQaIntake
+                            language={interviewLanguage}
                             onComplete={async (answers) => {
-                                // Save all Q&A pairs to the session
-                                if (!fetchWithCsrf) return;
-                                for (let i = 0; i < answers.length; i++) {
-                                    try {
-                                        await fetchWithCsrf(`/api/sessions/${sessionId}/qa`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({
-                                                question: answers[i].question,
-                                                answer: answers[i].answer,
-                                                order_index: i
-                                            })
-                                        });
-                                    } catch {}
-                                }
-                                // Update local state for summary step
+                                // Update local state for summary step immediately (0ms UI latency)
                                 setAiQuestions(answers.map(a => a.question));
                                 setAnswers(answers.map(a => a.answer));
                                 setStep(4);
+
+                                // Save all Q&A pairs in a single high-speed batch request
+                                if (fetchWithCsrf && answers.length > 0) {
+                                    fetchWithCsrf(`/api/sessions/${sessionId}/qa/batch`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            items: answers.map((a, i) => ({
+                                                question: a.question,
+                                                answer: a.answer,
+                                                order_index: i
+                                            }))
+                                        })
+                                    }).catch(e => console.warn('QA batch save error:', e));
+                                }
                             }}
                             onCancel={() => setStep(2)}
                         />

@@ -2,15 +2,15 @@ import { useTranslation } from 'react-i18next';
 import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Activity, 
-  Users, 
-  FileText, 
-  Settings as SettingsIcon, 
-  LogOut, 
-  Moon, 
-  Sun, 
+import {
+  LayoutDashboard,
+  Activity,
+  Users,
+  FileText,
+  Settings as SettingsIcon,
+  LogOut,
+  Moon,
+  Sun,
   Stethoscope,
   Loader2,
   ShieldCheck
@@ -79,7 +79,7 @@ const Sidebar = () => {
     <div className="w-64 bg-background border-r border-border h-screen flex flex-col transition-premium relative overflow-hidden">
       {/* Background Glow */}
       <div className="absolute top-0 left-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-      
+
       <div className="p-6 mb-2 mt-2 relative z-10">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shadow-emerald-500/20">
@@ -100,11 +100,10 @@ const Sidebar = () => {
               <li key={item.name}>
                 <Link
                   to={item.path}
-                  className={`flex items-center px-4 py-3 rounded-xl transition-premium group hover-lift ${
-                    isActive
+                  className={`flex items-center px-4 py-3 rounded-xl transition-premium group hover-lift ${isActive
                       ? 'bg-gradient-primary text-white font-bold shadow-xl shadow-emerald-500/20'
                       : 'text-text-muted hover:bg-surface hover:text-text'
-                  }`}
+                    }`}
                 >
                   <item.icon className={`w-5 h-5 mr-3 transition-colors ${isActive ? 'text-white' : 'text-text-muted group-hover:text-accent'}`} />
                   <span className="text-sm tracking-wide">{item.name}</span>
@@ -118,13 +117,13 @@ const Sidebar = () => {
 
       <div className="mx-4 mb-8 p-3 rounded-2xl glass-card flex items-center justify-between gap-3 border border-white/10 shadow-lg">
         <div className="flex items-center gap-3 overflow-hidden flex-1">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white shadow-lg shadow-accent/20 shrink-0">
-                <Stethoscope className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-                <div className="text-[11px] font-black text-text truncate uppercase tracking-widest">{user?.fullName || 'User'}</div>
-                <div className="text-[8px] font-bold text-text-muted truncate uppercase tracking-tighter opacity-60">{clinicName}</div>
-            </div>
+          <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center text-white shadow-lg shadow-accent/20 shrink-0">
+            <Stethoscope className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[11px] font-black text-text truncate uppercase tracking-widest">{user?.fullName || 'User'}</div>
+            <div className="text-[8px] font-bold text-text-muted truncate uppercase tracking-tighter opacity-60">{clinicName}</div>
+          </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-white/5 text-text-muted transition-premium">

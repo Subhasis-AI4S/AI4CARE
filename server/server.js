@@ -320,7 +320,7 @@ app.put('/api/sessions/:id/status', authenticateToken, async (req, res) => {
     }
 });
 
-// QA Pairs API
+// QA Pairs API — Single Insert
 app.post('/api/sessions/:id/qa', authenticateToken, async (req, res) => {
     const sessionId = req.params.id;
     const { question, answer, order_index } = req.body;
@@ -337,6 +337,36 @@ app.post('/api/sessions/:id/qa', authenticateToken, async (req, res) => {
     } catch (err) {
         console.error('[QA] Insert failed:', err);
         res.status(500).json({ error: 'Failed to save answer record' });
+    }
+});
+
+// QA Pairs API — Ultra-Fast Batch Insert (1 network roundtrip)
+app.post('/api/sessions/:id/qa/batch', authenticateToken, async (req, res) => {
+    const sessionId = req.params.id;
+    const { items } = req.body; // Array of { question, answer, order_index }
+
+    if (!Array.isArray(items) || items.length === 0) {
+        return res.json({ success: true, inserted: 0 });
+    }
+
+    try {
+        const session = await db.get('SELECT id FROM sessions WHERE id::text = ? AND tenant_id::text = ?', [sessionId, req.tenantId]);
+        if (!session) return res.status(404).json({ error: 'Session not found or unauthorized' });
+
+        await db.transaction(async (tx) => {
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                await tx.run(
+                    'INSERT INTO qa_pairs (session_id, question, answer, order_index, tenant_id) VALUES (?, ?, ?, ?, ?)',
+                    [sessionId, item.question, item.answer, item.order_index ?? i, req.tenantId]
+                );
+            }
+        });
+
+        res.json({ success: true, inserted: items.length });
+    } catch (err) {
+        console.error('[QA Batch] Insert failed:', err);
+        res.status(500).json({ error: 'Failed to batch save answers' });
     }
 });
 
