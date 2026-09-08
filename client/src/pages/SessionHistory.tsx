@@ -16,11 +16,13 @@ const safeFormatDate = (dateStr: string | null | undefined, formatStr = 'MMM dd,
 
 const safeTimeAgo = (dateStr: string | null | undefined) => {
   if (!dateStr) return '';
-  try { const d = parseISO(dateStr); return isValid(d) ? formatDistanceToNow(d, { addSuffix: true }) : ''; }
-  catch { return ''; }
+  try {
+    const d = parseISO(dateStr);
+    return isValid(d) ? formatDistanceToNow(d, { addSuffix: true }) : '';
+  } catch { return ''; }
 };
 
-const avatarColor = (name: string) => {
+const avatarColor = (name: string): [string, string] => {
   const palettes: [string, string][] = [
     ['#0ea5e9', '#0284c7'], ['#14b8a6', '#0d9488'], ['#8b5cf6', '#7c3aed'],
     ['#f59e0b', '#d97706'], ['#f43f5e', '#e11d48'], ['#10b981', '#059669'],
@@ -42,11 +44,20 @@ const getDiseaseIcon = (complaint = '') => {
   return '🏥';
 };
 
-// ── Session Card (Grid) ───────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Session Card — Grid View
+// ─────────────────────────────────────────────────────────────────────────────
 const SessionCard = ({ session, onDelete }: { session: any; onDelete: (id: number) => void }) => {
   const [c1, c2] = avatarColor(session.patient_name || '?');
-  const initials = (session.patient_name || 'UN').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-  const href = session.status === 'in_progress' ? `/session/resume/${session.id}` : `/session/${session.id}`;
+  const initials = (session.patient_name || 'UN')
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+  const href = session.status === 'in_progress'
+    ? `/session/resume/${session.id}`
+    : `/session/${session.id}`;
 
   return (
     <motion.div
@@ -58,8 +69,11 @@ const SessionCard = ({ session, onDelete }: { session: any; onDelete: (id: numbe
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       className="card-medical group flex flex-col overflow-hidden"
     >
-      {/* Top gradient accent bar */}
-      <div className="h-1.5 w-full shrink-0" style={{ background: `linear-gradient(90deg, ${c1}, ${c2})` }} />
+      {/* Colour accent bar */}
+      <div
+        className="h-1.5 w-full shrink-0"
+        style={{ background: `linear-gradient(90deg, ${c1}, ${c2})` }}
+      />
 
       <div className="p-5 flex-1 flex flex-col gap-3">
 
@@ -82,12 +96,12 @@ const SessionCard = ({ session, onDelete }: { session: any; onDelete: (id: numbe
           </div>
         </div>
 
-        {/* Row 2: Status badge — full width, its own row */}
+        {/* Row 2: Status badge — full row, never clipped */}
         <div>
           <StatusBadge status={session.status} />
         </div>
 
-        {/* Row 3: Complaint text */}
+        {/* Row 3: Complaint */}
         <div className="flex items-start gap-2 flex-1">
           <span className="text-base leading-none mt-0.5 shrink-0">
             {getDiseaseIcon(session.complaint || session.summary_complaint)}
@@ -105,12 +119,15 @@ const SessionCard = ({ session, onDelete }: { session: any; onDelete: (id: numbe
           🕐 {safeTimeAgo(session.created_at)}
         </div>
 
-        {/* Row 5: Action buttons */}
+        {/* Row 5: Buttons */}
         <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
           <Link
             to={href}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:scale-[1.02] active:scale-95"
-            style={{ background: 'var(--gradient-primary)', boxShadow: '0 4px 12px rgba(20,184,166,0.25)' }}
+            style={{
+              background: 'var(--gradient-primary)',
+              boxShadow: '0 4px 12px rgba(20,184,166,0.25)',
+            }}
           >
             <Eye className="w-4 h-4" />
             {session.status === 'in_progress' ? 'Continue' : 'View'}
@@ -127,55 +144,110 @@ const SessionCard = ({ session, onDelete }: { session: any; onDelete: (id: numbe
   );
 };
 
-// ── Session Row (List) ────────────────────────────────────────────
-const SessionRow = ({ session, idx, onDelete }: { session: any; idx: number; onDelete: (id: number) => void }) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// Session Row — List / Table View
+// ─────────────────────────────────────────────────────────────────────────────
+const SessionRow = ({
+  session,
+  idx,
+  onDelete,
+}: {
+  session: any;
+  idx: number;
+  onDelete: (id: number) => void;
+}) => {
   const [c1, c2] = avatarColor(session.patient_name || '?');
-  const initials = (session.patient_name || 'UN').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-  const href = session.status === 'in_progress' ? `/session/resume/${session.id}` : `/session/${session.id}`;
+  const initials = (session.patient_name || 'UN')
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+  const href =
+    session.status === 'in_progress'
+      ? `/session/resume/${session.id}`
+      : `/session/${session.id}`;
 
   return (
     <motion.tr
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: idx * 0.04 }}
-      className="group hover:bg-sky-50/50 dark:hover:bg-sky-500/3 transition-colors"
+      style={{ borderBottom: '1px solid var(--border)' }}
+      className="hover:bg-sky-50/50 dark:hover:bg-sky-500/5 transition-colors"
     >
-      <td className="px-6 py-4">
+      {/* Patient */}
+      <td style={{ padding: '0.875rem 1rem', whiteSpace: 'nowrap' }}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-xs shrink-0"
-            style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-xs shrink-0"
+            style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}
+          >
             {initials}
           </div>
           <div>
-            <div className="text-sm font-bold text-text">{session.patient_name || 'Anonymous'}</div>
-            <div className="text-xs text-text-muted">{session.patient_age ? `${session.patient_age}y` : '?'} · {session.gender || 'U'}</div>
+            <div className="text-sm font-bold text-text leading-snug">
+              {session.patient_name || 'Anonymous'}
+            </div>
+            <div className="text-xs text-text-muted">
+              {session.patient_age ? `${session.patient_age}y` : '?'} &middot; {session.gender || 'U'}
+            </div>
           </div>
         </div>
       </td>
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-2 text-sm text-text-muted max-w-xs">
-          <span className="shrink-0">{getDiseaseIcon(session.complaint || session.summary_complaint)}</span>
-          <span className="truncate">{session.summary_complaint || session.complaint || '—'}</span>
+
+      {/* Complaint */}
+      <td style={{ padding: '0.875rem 1rem', maxWidth: '220px' }}>
+        <div className="flex items-center gap-2 text-sm text-text-muted">
+          <span className="shrink-0 text-base">
+            {getDiseaseIcon(session.complaint || session.summary_complaint)}
+          </span>
+          <span
+            className="truncate"
+            style={{ maxWidth: '180px' }}
+            title={session.summary_complaint || session.complaint}
+          >
+            {session.summary_complaint || session.complaint || '—'}
+          </span>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm font-bold text-text">{safeFormatDate(session.created_at, 'MMM dd, yyyy')}</div>
-        <div className="text-xs text-text-muted">{safeFormatDate(session.created_at, 'h:mm a')}</div>
+
+      {/* Date */}
+      <td style={{ padding: '0.875rem 1rem', whiteSpace: 'nowrap' }}>
+        <div className="text-sm font-bold text-text">
+          {safeFormatDate(session.created_at, 'MMM dd, yyyy')}
+        </div>
+        <div className="text-xs text-text-muted">
+          {safeFormatDate(session.created_at, 'h:mm a')}
+        </div>
       </td>
-      <td className="px-6 py-4">
+
+      {/* Status */}
+      <td style={{ padding: '0.875rem 1rem', whiteSpace: 'nowrap' }}>
         <StatusBadge status={session.status} />
       </td>
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
-          <Link to={href}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white transition-all hover:scale-105"
-            style={{ background: 'var(--gradient-primary)' }}>
+
+      {/* Actions — always visible, no opacity trick */}
+      <td style={{ padding: '0.875rem 1rem', whiteSpace: 'nowrap', textAlign: 'right' }}>
+        <div className="flex items-center gap-2 justify-end">
+          <Link
+            to={href}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95"
+            style={{
+              background: 'var(--gradient-primary)',
+              boxShadow: '0 3px 10px rgba(20,184,166,0.25)',
+              whiteSpace: 'nowrap',
+            }}
+          >
             <Eye className="w-3.5 h-3.5" />
             {session.status === 'in_progress' ? 'Continue' : 'View'}
           </Link>
-          <button onClick={() => onDelete(session.id)}
-            className="p-2 rounded-xl text-text-muted hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 transition-all">
-            <Trash2 className="w-4 h-4" />
+          <button
+            onClick={() => onDelete(session.id)}
+            title="Delete session"
+            className="w-8 h-8 rounded-xl border border-border flex items-center justify-center text-text-muted hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-200 transition-all shrink-0"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </td>
@@ -183,7 +255,9 @@ const SessionRow = ({ session, idx, onDelete }: { session: any; idx: number; onD
   );
 };
 
-// ── Main Component ────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────────────────────────────────────
 export const SessionHistory = () => {
   const { t } = useTranslation();
   const { logout, user, fetchWithCsrf } = useAppContext();
@@ -211,7 +285,9 @@ export const SessionHistory = () => {
   };
 
   useEffect(() => { if (user) fetchSessions(); }, [user]);
-  useEffect(() => { setStatusFilter(queryParams.get('status') || 'all'); }, [location.search]);
+  useEffect(() => {
+    setStatusFilter(new URLSearchParams(location.search).get('status') || 'all');
+  }, [location.search]);
 
   const handleDelete = async (id: number) => {
     if (!confirm(t('sessions_flow.delete_confirm'))) return;
@@ -232,8 +308,10 @@ export const SessionHistory = () => {
     const nameMatch = (s.patient_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const complaintMatch = (s.complaint || s.summary_complaint || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSearch = nameMatch || complaintMatch;
+
     let matchesStatus = statusFilter === 'all' || s.status === statusFilter;
     if (statusFilter === 'in_progress' && s.status === 'processing') matchesStatus = true;
+
     let matchesDate = true;
     if (dateFilter === 'today') {
       try {
@@ -251,9 +329,22 @@ export const SessionHistory = () => {
     { value: 'flagged',     label: 'Flagged' },
   ];
 
+  const thStyle: React.CSSProperties = {
+    padding: '0.875rem 1rem',
+    fontSize: '0.7rem',
+    fontWeight: 800,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    color: 'var(--text-muted)',
+    borderBottom: '1px solid var(--border)',
+    whiteSpace: 'nowrap',
+    background: 'var(--surface)',
+  };
+
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto pb-12">
-      {/* Header */}
+
+      {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-black text-text tracking-tight">{t('sessions')}</h1>
@@ -264,27 +355,35 @@ export const SessionHistory = () => {
         <Link
           to="/session/new"
           className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm text-white transition-all hover:scale-105 active:scale-95 shadow-lg"
-          style={{ background: 'var(--gradient-primary)', boxShadow: '0 6px 16px rgba(20,184,166,0.3)' }}
+          style={{
+            background: 'var(--gradient-primary)',
+            boxShadow: '0 6px 16px rgba(20,184,166,0.3)',
+          }}
         >
           <Plus className="w-4 h-4" /> New Session
         </Link>
       </div>
 
-      {/* Search + Filters */}
-      <div className="card-medical p-4 mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      {/* ── Search + Filters ────────────────────────────────────── */}
+      <div className="card-medical p-4 mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
         {/* Search */}
-        <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-text-muted w-5 h-5" />
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted w-4 h-4" />
           <input
             type="text"
             placeholder={t('sessions_flow.search_placeholder') || 'Search by patient name or complaint...'}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-surface-2 dark:bg-background border border-border rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all placeholder:text-text-muted/60"
+            className="w-full pl-10 pr-4 py-3 rounded-2xl text-sm font-medium focus:outline-none transition-all placeholder:text-text-muted/60"
+            style={{
+              background: 'var(--surface-2, var(--background))',
+              border: '1.5px solid var(--border)',
+              color: 'var(--text)',
+            }}
           />
         </div>
 
-        {/* Status filter pills */}
+        {/* Status filter chips */}
         <div className="flex items-center gap-2 flex-wrap">
           <Filter className="w-4 h-4 text-text-muted shrink-0" />
           {statusOptions.map(opt => (
@@ -293,36 +392,52 @@ export const SessionHistory = () => {
               onClick={() => setStatusFilter(opt.value)}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                 statusFilter === opt.value
-                  ? 'bg-teal-500 text-white shadow-md shadow-teal-500/25'
-                  : 'bg-surface-2 text-text-muted hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-500/10 border border-border'
+                  ? 'text-white shadow-md'
+                  : 'text-text-muted hover:text-teal-600 border border-border'
               }`}
+              style={
+                statusFilter === opt.value
+                  ? { background: 'var(--gradient-primary)', boxShadow: '0 4px 12px rgba(20,184,166,0.3)' }
+                  : { background: 'var(--surface-2, var(--surface))' }
+              }
             >
               {opt.label}
             </button>
           ))}
         </div>
 
-        {/* View toggle */}
-        <div className="flex items-center gap-1 bg-surface-2 p-1 rounded-xl border border-border shrink-0">
+        {/* View mode toggle */}
+        <div
+          className="flex items-center gap-1 p-1 rounded-xl border border-border shrink-0"
+          style={{ background: 'var(--surface-2, var(--surface))' }}
+        >
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-teal-500 text-white shadow-sm' : 'text-text-muted hover:text-text'}`}
+            className={`p-2 rounded-lg transition-all ${
+              viewMode === 'grid' ? 'text-white shadow-sm' : 'text-text-muted hover:text-text'
+            }`}
+            style={viewMode === 'grid' ? { background: 'var(--gradient-primary)' } : {}}
+            title="Grid view"
           >
             <LayoutGrid className="w-4 h-4" />
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-teal-500 text-white shadow-sm' : 'text-text-muted hover:text-text'}`}
+            className={`p-2 rounded-lg transition-all ${
+              viewMode === 'list' ? 'text-white shadow-sm' : 'text-text-muted hover:text-text'
+            }`}
+            style={viewMode === 'list' ? { background: 'var(--gradient-primary)' } : {}}
+            title="List view"
           >
             <LayoutList className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Content */}
+      {/* ── Content ─────────────────────────────────────────────── */}
       {loading ? (
-        <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' : 'space-y-3'}>
-          {Array.from({ length: 8 }).map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="card-medical p-5 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="skeleton w-12 h-12 rounded-2xl" />
@@ -331,6 +446,7 @@ export const SessionHistory = () => {
                   <div className="skeleton h-3 w-20 rounded" />
                 </div>
               </div>
+              <div className="skeleton h-5 w-24 rounded-full" />
               <div className="skeleton h-4 w-full rounded" />
               <div className="skeleton h-4 w-3/4 rounded" />
               <div className="skeleton h-10 w-full rounded-xl" />
@@ -343,20 +459,27 @@ export const SessionHistory = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="card-medical py-20 flex flex-col items-center justify-center text-center"
         >
-          <div className="w-20 h-20 rounded-3xl bg-teal-50 dark:bg-teal-500/10 flex items-center justify-center mb-5 shadow-sm">
+          <div className="w-20 h-20 rounded-3xl bg-teal-50 dark:bg-teal-500/10 flex items-center justify-center mb-5">
             <User className="w-10 h-10 text-teal-500" />
           </div>
           <h3 className="text-xl font-black text-text mb-2">No sessions found</h3>
           <p className="text-text-muted font-medium mb-6 max-w-sm">
-            {searchTerm ? `No results for "${searchTerm}". Try a different search.` : 'Start your first patient intake session to see it here.'}
+            {searchTerm
+              ? `No results for "${searchTerm}". Try a different search.`
+              : 'Start your first patient intake session to see it here.'}
           </p>
           {!searchTerm && (
-            <Link to="/session/new" className="btn-primary flex items-center gap-2 px-6 py-3">
+            <Link
+              to="/session/new"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold text-white"
+              style={{ background: 'var(--gradient-primary)' }}
+            >
               <Plus className="w-4 h-4" /> Start First Session
             </Link>
           )}
         </motion.div>
       ) : viewMode === 'grid' ? (
+        /* ── Grid view ── */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <AnimatePresence>
             {filteredSessions.map(session => (
@@ -365,25 +488,37 @@ export const SessionHistory = () => {
           </AnimatePresence>
         </div>
       ) : (
-        <div className="card-medical overflow-hidden">
-          <table className="min-w-full table-medical">
-            <thead>
-              <tr>
-                <th>Patient</th>
-                <th>Complaint</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              <AnimatePresence>
-                {filteredSessions.map((s, idx) => (
-                  <SessionRow key={s.id} session={s} idx={idx} onDelete={handleDelete} />
-                ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
+        /* ── List / Table view ── */
+        <div
+          className="card-medical overflow-hidden"
+          style={{ borderRadius: 'var(--radius-xl)' }}
+        >
+          {/* overflow-x-auto ensures horizontal scroll at 100% zoom instead of clipping */}
+          <div className="overflow-x-auto">
+            <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={{ ...thStyle, textAlign: 'left' }}>Patient</th>
+                  <th style={{ ...thStyle, textAlign: 'left' }}>Complaint</th>
+                  <th style={{ ...thStyle, textAlign: 'left' }}>Date</th>
+                  <th style={{ ...thStyle, textAlign: 'left' }}>Status</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence>
+                  {filteredSessions.map((s, idx) => (
+                    <SessionRow
+                      key={s.id}
+                      session={s}
+                      idx={idx}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
