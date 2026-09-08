@@ -54,49 +54,59 @@ const SessionCard = ({ session, onDelete }: { session: any; onDelete: (id: numbe
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -3 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
       className="card-medical group flex flex-col overflow-hidden"
     >
-      {/* Card top gradient bar */}
-      <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${c1}, ${c2})` }} />
+      {/* Top gradient accent bar */}
+      <div className="h-1.5 w-full shrink-0" style={{ background: `linear-gradient(90deg, ${c1}, ${c2})` }} />
 
-      <div className="p-5 flex-1 flex flex-col">
-        {/* Avatar + Status */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-md"
-              style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}
-            >
-              {initials}
+      <div className="p-5 flex-1 flex flex-col gap-3">
+
+        {/* Row 1: Avatar + Name */}
+        <div className="flex items-center gap-3">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-base shadow-md shrink-0"
+            style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}
+          >
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-black text-text text-sm leading-snug break-words">
+              {session.patient_name || 'Anonymous'}
             </div>
-            <div>
-              <div className="font-black text-text text-sm">{session.patient_name || 'Anonymous'}</div>
-              <div className="text-xs text-text-muted font-medium">
-                {session.patient_age ? `${session.patient_age}y` : '?'}
-                {session.gender ? ` · ${session.gender}` : ''}
-              </div>
+            <div className="text-xs text-text-muted font-medium mt-0.5">
+              {session.patient_age ? `${session.patient_age} yrs` : 'Age ?'}
+              {session.gender ? ` · ${session.gender}` : ''}
             </div>
           </div>
+        </div>
+
+        {/* Row 2: Status badge — full width, its own row */}
+        <div>
           <StatusBadge status={session.status} />
         </div>
 
-        {/* Complaint / Summary */}
-        <div className="flex items-start gap-2 mb-4 flex-1">
-          <span className="text-lg leading-none mt-0.5 shrink-0">{getDiseaseIcon(session.complaint || session.summary_complaint)}</span>
-          <p className="text-sm text-text-muted font-medium leading-relaxed line-clamp-2 flex-1">
+        {/* Row 3: Complaint text */}
+        <div className="flex items-start gap-2 flex-1">
+          <span className="text-base leading-none mt-0.5 shrink-0">
+            {getDiseaseIcon(session.complaint || session.summary_complaint)}
+          </span>
+          <p className="text-sm text-text-muted font-medium leading-relaxed line-clamp-3 flex-1">
             {session.summary_complaint || session.complaint || 'No complaint recorded'}
           </p>
         </div>
 
-        {/* Time */}
-        <div className="text-xs text-text-muted/60 font-semibold mb-4" title={safeFormatDate(session.created_at, 'MMMM d, yyyy · h:mm a')}>
+        {/* Row 4: Time ago */}
+        <div
+          className="text-xs text-text-muted/60 font-semibold"
+          title={safeFormatDate(session.created_at, 'MMMM d, yyyy · h:mm a')}
+        >
           🕐 {safeTimeAgo(session.created_at)}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 pt-3 border-t border-border">
+        {/* Row 5: Action buttons */}
+        <div className="flex items-center gap-2 pt-3 border-t border-border mt-auto">
           <Link
             to={href}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:scale-[1.02] active:scale-95"
@@ -107,7 +117,7 @@ const SessionCard = ({ session, onDelete }: { session: any; onDelete: (id: numbe
           </Link>
           <button
             onClick={() => onDelete(session.id)}
-            className="w-10 h-10 rounded-xl border border-border flex items-center justify-center text-text-muted hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-500/30 transition-all"
+            className="w-10 h-10 rounded-xl border border-border flex items-center justify-center text-text-muted hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-500/30 transition-all shrink-0"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -347,7 +357,7 @@ export const SessionHistory = () => {
           )}
         </motion.div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <AnimatePresence>
             {filteredSessions.map(session => (
               <SessionCard key={session.id} session={session} onDelete={handleDelete} />
