@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { format, subDays, isSameDay, parseISO, isValid } from 'date-fns';
 import {
-  Activity, CheckCircle, Clock, AlertTriangle, User,
+  Activity, CheckCircle, Clock, AlertTriangle,
   TrendingUp, TrendingDown, ArrowRight, Plus, Zap,
   Stethoscope, Calendar, Star, BarChart2
 } from 'lucide-react';

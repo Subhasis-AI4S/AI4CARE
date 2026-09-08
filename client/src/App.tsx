@@ -13,7 +13,6 @@ import {
   Moon,
   Sun,
   Stethoscope,
-  Loader2,
   ShieldCheck,
   Plus,
   Menu,
@@ -84,7 +83,7 @@ const stringToColor = (str: string) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-const Sidebar = ({ mobileOpen, onClose }: { mobileOpen?: boolean; onClose?: () => void }) => {
+const Sidebar = ({ onClose }: { mobileOpen?: boolean; onClose?: () => void }) => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -239,7 +238,7 @@ const Sidebar = ({ mobileOpen, onClose }: { mobileOpen?: boolean; onClose?: () =
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { user, theme, toggleTheme } = useAppContext();
+  const { theme, toggleTheme } = useAppContext();
 
   const pageTitle: Record<string, string> = {
     '/': 'Dashboard',

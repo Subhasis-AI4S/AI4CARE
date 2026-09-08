@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format, parseISO, isSameDay, isValid, formatDistanceToNow } from 'date-fns';
-import { Search, Eye, Trash2, SlidersHorizontal, Filter, LayoutGrid, LayoutList, Plus, User } from 'lucide-react';
+import { Search, Eye, Trash2, Filter, LayoutGrid, LayoutList, Plus, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { StatusBadge } from './Dashboard';
 import { useTranslation } from 'react-i18next';
